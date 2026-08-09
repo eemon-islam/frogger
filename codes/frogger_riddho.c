@@ -19,8 +19,11 @@ int main(void)
 
     Vector2 river ={0.0f,j_cap*2};
     Vector2 road={0.0f,j_cap*8};
+    Vector2 frog_pos={8*i_cap,13*j_cap};
 
     Texture2D car_pic[5];
+    Texture2D ground;
+    Texture2D frog[2];
 
 
     InitWindow(WIDTH,HEIGHT,"FROGGER");
@@ -31,6 +34,10 @@ int main(void)
     car_pic[2] = LoadTexture("asset/car_3.png");
     car_pic[3] = LoadTexture("asset/tractor.png");
     car_pic[4] = LoadTexture("asset/truck.png");
+    ground = LoadTexture("asset/flower_ground_1.png");
+    frog[0]= LoadTexture("asset/frog0000.png");
+    frog[1]= LoadTexture("asset/frog0001.png");
+    
 
     Car cars[14];
     int idx=0;
@@ -48,7 +55,7 @@ int main(void)
     {
         cars[idx].pic_num=2;
          cars[idx].speed=+120.0f;
-        cars[idx].position_x=(5+3*i)*i_cap;
+        cars[idx].position_x=(1+5*i)*i_cap;
         cars[idx].position_y=9*j_cap;   
         cars[idx].width=i_cap;      
         idx++;
@@ -83,7 +90,17 @@ int main(void)
     }
     while(!WindowShouldClose())
 {
-
+float dt=GetFrameTime();
+        for (int i= 0; i < idx; i++) 
+        {
+            cars[i].position_x+=cars[i].speed*dt;
+            if (cars[i].speed > 0 && cars[i].position_x > WIDTH) {
+                cars[i].position_x=-cars[i].width;
+            } 
+            else if (cars[i].speed < 0 && cars[i].position_x+cars[i].width < 0) {
+                cars[i].position_x = WIDTH+cars[i].position_x;   
+            }
+        }
 
 BeginDrawing();
 ClearBackground((Color){0,0,0,255});
@@ -93,8 +110,19 @@ for(int i=0;i<idx;i++)
 {
   DrawTexturePro(car_pic[cars[i].pic_num],(Rectangle){0.0f,0.0f,car_pic[cars[i].pic_num].width,car_pic[cars[i].pic_num].height},(Rectangle){cars[i].position_x,cars[i].position_y,cars[i].width,j_cap},Vector2Zero(),0.0f,WHITE);
 }
-
-
+int pos_x=0;
+for(int i=0;i<15;i++)
+{
+    DrawTexturePro(ground,(Rectangle){0.0f,0.0f,ground.width,ground.height},(Rectangle){pos_x,7*j_cap,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
+    pos_x+=i_cap;
+}
+ pos_x=0;
+for(int i=0;i<15;i++)
+{
+    DrawTexturePro(ground,(Rectangle){0.0f,0.0f,ground.width,ground.height},(Rectangle){pos_x,13*j_cap,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
+    pos_x+=i_cap;
+}
+DrawTexturePro(frog[0],(Rectangle){0.0f,0.0f,frog[0].width,frog[0].height},(Rectangle){frog_pos.x,frog_pos.y,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
 
 
 
@@ -109,7 +137,8 @@ EndDrawing();
     {
         UnloadTexture(car_pic[i]);
     }
-
+    UnloadTexture(frog[0]);
+    UnloadTexture(frog[1]);
     CloseWindow();
     return 0;
 }
