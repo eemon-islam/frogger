@@ -1,5 +1,7 @@
 #include "raylib.h"
 #include "raymath.h"
+#include<stdbool.h>
+#include<math.h>
 
 #define HEIGHT 1000
 #define WIDTH 1200
@@ -200,7 +202,11 @@ int main(void)
 
     float frog_rot=0.0f;
     float time=0.0f;
-    float max_time=10.0f;
+    float max_time=30.0f;
+
+    int score=0;
+    bool visited[11]={false};
+    int y_level=-1;
 
     while(!WindowShouldClose())
 {
@@ -233,14 +239,22 @@ float dt=GetFrameTime();
             if (  logs[i].position_x > WIDTH) {
                 logs[i].position_x = -i_cap;   
             }
-        }                  
+        }                 
         if (IsKeyPressed(KEY_UP)) {
             frog_pos.y -= j_cap;
             frog_rot = 0.0f;
+            y_level++;
+            
+            if( !visited[y_level] && y_level<11)
+            {
+                visited[y_level]=true;
+                score+=10;
+            }
         }
         if (IsKeyPressed(KEY_DOWN)) {
             frog_pos.y += j_cap;
             frog_rot = 180.0f;
+            y_level--;
         }
         if (IsKeyPressed(KEY_LEFT)) {
             frog_pos.x -= i_cap;
@@ -250,12 +264,23 @@ float dt=GetFrameTime();
             frog_pos.x += j_cap;
             frog_rot = 90.0f;
         }
+        if(frog_pos.y<1*j_cap)
+        {
+            frog_pos.y=1*j_cap;
+        }
+        else if(frog_pos.y>14*j_cap)
+        {
+            frog_pos.y=14*j_cap;
+        }
     }
     else{
 
         frog_pos.x = 8 * i_cap; 
         frog_pos.y = 13 * j_cap;
         time=0.0f;
+        for(int k = 0; k < 11; k++) {
+        visited[k] = false;
+    }
 
     }
 
@@ -288,6 +313,7 @@ for(int i=0;i<15;i++)
     pos_x+=i_cap;
 }
 DrawTexturePro(frog[0],(Rectangle){0.0f,0.0f,frog[0].width,frog[0].height},(Rectangle){frog_pos.x,frog_pos.y,i_cap,j_cap},Vector2Zero(),frog_rot,WHITE);
+DrawText(TextFormat("SCORE: %d", score), 13*i_cap, 14*j_cap, 20, LIGHTGRAY);
 
 
 
