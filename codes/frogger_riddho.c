@@ -5,6 +5,7 @@
 
 #define HEIGHT 1000
 #define WIDTH 1200
+
 typedef struct car
 {
     float speed;
@@ -13,6 +14,7 @@ typedef struct car
     float width;
     int pic_num;
 }car;
+
 typedef struct  turtle
 {
     float speed;
@@ -20,6 +22,7 @@ typedef struct  turtle
     float position_y;
     int pic_num;
 }turtle;
+
 typedef struct  logg
 {
     float speed;
@@ -43,6 +46,7 @@ int main(void)
     Texture2D frog[2];
     Texture2D turtle_pic;
     Texture2D log_pic[3];
+    Texture2D upper_grass;
 
 
     InitWindow(WIDTH,HEIGHT,"FROGGER");
@@ -64,6 +68,7 @@ int main(void)
     log_pic[0]= LoadTexture("asset/log_left.png");
     log_pic[1]= LoadTexture("asset/log_middle.png");
     log_pic[2]= LoadTexture("asset/log_right.png");
+    upper_grass = LoadTexture("asset/uppergrass.png"); 
     
 
     car cars[14];
@@ -316,13 +321,13 @@ for(int i=0;i<tur_idx;i++)
 {
   DrawTexturePro(turtle_pic,(Rectangle){0.0f,0.0f,turtle_pic.width,turtle_pic.height},(Rectangle){turtles[i].position_x,turtles[i].position_y,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
 }
-int pos_x=0;
+float pos_x=0.0f;
 for(int i=0;i<15;i++)
 {
     DrawTexturePro(ground,(Rectangle){0.0f,0.0f,ground.width,ground.height},(Rectangle){pos_x,7*j_cap,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
     pos_x+=i_cap;
 }
- pos_x=0;
+ pos_x=0.0f;
 for(int i=0;i<15;i++)
 {
     DrawTexturePro(ground,(Rectangle){0.0f,0.0f,ground.width,ground.height},(Rectangle){pos_x,13*j_cap,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
@@ -330,7 +335,12 @@ for(int i=0;i<15;i++)
 }
 DrawTexturePro(frog[0],(Rectangle){0.0f,0.0f,frog[0].width,frog[0].height},(Rectangle){frog_pos.x,frog_pos.y,i_cap,j_cap},Vector2Zero(),frog_rot,WHITE);
 DrawText(TextFormat("SCORE: %d", score), 13*i_cap, 14*j_cap, 20, LIGHTGRAY);
-
+pos_x=0.0f;
+for(int i=0;i<15;i++)
+{
+    DrawTexturePro(upper_grass,(Rectangle){0.0f,0.0f,upper_grass.width,upper_grass.height},(Rectangle){pos_x,0.0f,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
+pos_x+=i_cap;
+}
 
 
 EndDrawing();
@@ -352,6 +362,7 @@ EndDrawing();
     UnloadTexture(frog[1]);
     UnloadTexture(turtle_pic);
     UnloadSound(jump);
+    UnloadTexture(upper_grass);
 
     CloseWindow();
     return 0;
