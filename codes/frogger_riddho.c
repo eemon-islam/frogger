@@ -47,6 +47,10 @@ int main(void)
 
     InitWindow(WIDTH,HEIGHT,"FROGGER");
     SetTargetFPS(60);
+    InitAudioDevice();
+
+    Sound jump= LoadSound("asset/music/proiettile.wav");
+
 
     car_pic[0] = LoadTexture("asset/car_1.png");
     car_pic[1] = LoadTexture("asset/car_2.png");
@@ -244,6 +248,7 @@ float dt=GetFrameTime();
             frog_pos.y -= j_cap;
             frog_rot = 0.0f;
             y_level++;
+            PlaySound(jump);
             
             if( !visited[y_level] && y_level<11 && y_level>=0)
             {
@@ -255,14 +260,17 @@ float dt=GetFrameTime();
             frog_pos.y += j_cap;
             frog_rot = 180.0f;
             y_level--;
+            PlaySound(jump);
         }
         if (IsKeyPressed(KEY_LEFT)) {
             frog_pos.x -= i_cap;
             frog_rot = 270.0f;
+            PlaySound(jump);
         }
         if (IsKeyPressed(KEY_RIGHT)) {
             frog_pos.x += j_cap;
             frog_rot = 90.0f;
+            PlaySound(jump);
         }
         if(frog_pos.y<1*j_cap)
         {
@@ -271,6 +279,14 @@ float dt=GetFrameTime();
         else if(frog_pos.y>14*j_cap)
         {
             frog_pos.y=14*j_cap;
+        }
+        else if(frog_pos.x<0)
+        {
+            frog_pos.x=0;
+        }
+        else if(frog_pos.x>WIDTH)
+        {
+            frog_pos.x=WIDTH;
         }
     }
     else{
@@ -335,6 +351,8 @@ EndDrawing();
     UnloadTexture(frog[0]);
     UnloadTexture(frog[1]);
     UnloadTexture(turtle_pic);
+    UnloadSound(jump);
+
     CloseWindow();
     return 0;
 }
