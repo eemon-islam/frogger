@@ -245,7 +245,7 @@ float dt=GetFrameTime();
             frog_rot = 0.0f;
             y_level++;
             
-            if( !visited[y_level] && y_level<11)
+            if( !visited[y_level] && y_level<11 && y_level>=0)
             {
                 visited[y_level]=true;
                 score+=10;
