@@ -16,16 +16,16 @@ typedef struct  turtle
     float speed;
     float position_x;
     float position_y;
-    float width;
+    int pic_num;
 }turtle;
-// typedef struct  log
-// {
-//     float speed;
-//     float position_x;
-//     float position_y;
-//     float width;
-//     int pic_num;
-// }log;
+typedef struct  logg
+{
+    float speed;
+    float position_x;
+    float position_y;
+    float width;
+    int pic_num;
+}logg;
 
 
 int main(void)
@@ -40,6 +40,7 @@ int main(void)
     Texture2D ground;
     Texture2D frog[2];
     Texture2D turtle_pic;
+    Texture2D log_pic[3];
 
 
     InitWindow(WIDTH,HEIGHT,"FROGGER");
@@ -54,21 +55,26 @@ int main(void)
     frog[0]= LoadTexture("asset/frog0000.png");
     frog[1]= LoadTexture("asset/frog0001.png");
     turtle_pic= LoadTexture("asset/turtle0000.png");
+    log_pic[0]= LoadTexture("asset/log_left.png");
+    log_pic[1]= LoadTexture("asset/log_middle.png");
+    log_pic[2]= LoadTexture("asset/log_right.png");
     
 
     car cars[14];
     turtle turtles[20];
+    logg logs[4*3+9*2+6*3];
 
 
 
     int car_idx=0;
     int tur_idx=0;
+    int log_idx=0;
 
     for(int i=0;i<2;i++)
     {
         cars[car_idx].pic_num=4;
         cars[car_idx].speed=-100.0f;
-        cars[car_idx].position_x=(8+4*i)*i_cap;
+        cars[car_idx].position_x=(8+5*i)*i_cap;
         cars[car_idx].position_y=8*j_cap;
         cars[car_idx].width=2*i_cap;
         car_idx++;
@@ -131,8 +137,63 @@ int main(void)
             tur_idx++;
         }
     }
-
-
+    for(int i=0;i<3;i++)
+    {
+        for(int j=0;j<4;j++)
+        {
+            logs[log_idx].speed=100.0f;
+            if(j==0)
+            {logs[log_idx].pic_num=0;}
+            else if(j==3)
+            {
+                logs[log_idx].pic_num=2;
+            }
+            else{
+                logs[log_idx].pic_num=1;
+            }
+            logs[log_idx].position_x=(1+5*i+j)*i_cap;
+            logs[log_idx].position_y=2*j_cap;
+            log_idx++;
+        }
+    }
+    for(int i=0;i<2;i++)
+    {
+        for(int j=0;j<9;j++)
+        {
+            logs[log_idx].speed=120.0f;
+            if(j==0)
+            {logs[log_idx].pic_num=0;}
+            else if(j==8)
+            {
+                logs[log_idx].pic_num=2;
+            }
+            else{
+                logs[log_idx].pic_num=1;
+            }
+            logs[log_idx].position_x=(2+12*i+j)*i_cap;
+            logs[log_idx].position_y=4*j_cap;
+            log_idx++;
+        }
+    }
+    for(int i=0;i<3;i++)
+    {
+        for(int j=0;j<5;j++)
+        {
+            logs[log_idx].speed=120.0f;
+            if(j==0)
+            {logs[log_idx].pic_num=0;}
+            else if(j==4)
+            {
+                logs[log_idx].pic_num=2;
+            }
+            else{
+                logs[log_idx].pic_num=1;
+            }
+            logs[log_idx].position_x=(2+12*i+j)*i_cap;
+            logs[log_idx].position_y=5*j_cap;
+            log_idx++;
+        }
+    }
 
 
 
@@ -149,7 +210,7 @@ float dt=GetFrameTime();
                 cars[i].position_x=-cars[i].width;
             } 
             else if (cars[i].speed < 0 && cars[i].position_x+cars[i].width < 0) {
-                cars[i].position_x = WIDTH+cars[i].position_x;   
+                cars[i].position_x = WIDTH+cars[i].width;   
             }
         }
 
@@ -160,7 +221,15 @@ float dt=GetFrameTime();
             if (  turtles[i].position_x+i_cap < 0) {
                 turtles[i].position_x = WIDTH+i_cap;   
             }
-        }        
+        }     
+        for (int i= 0; i < log_idx; i++) 
+        {
+            logs[i].position_x+=logs[i].speed*dt;
+
+            if (  logs[i].position_x > WIDTH) {
+                logs[i].position_x = -i_cap;   
+            }
+        }                  
         if (IsKeyPressed(KEY_UP)) {
             frog_pos.y -= j_cap;
             frog_rot = 0.0f;
@@ -186,6 +255,10 @@ DrawRectangle(road.x,road.y,WIDTH,j_cap*5,(Color){0,0,0,255});
 for(int i=0;i<car_idx;i++)
 {
   DrawTexturePro(car_pic[cars[i].pic_num],(Rectangle){0.0f,0.0f,car_pic[cars[i].pic_num].width,car_pic[cars[i].pic_num].height},(Rectangle){cars[i].position_x,cars[i].position_y,cars[i].width,j_cap},Vector2Zero(),0.0f,WHITE);
+}
+for(int i=0;i<log_idx;i++)
+{
+  DrawTexturePro(log_pic[logs[i].pic_num],(Rectangle){0.0f,0.0f,log_pic[logs[i].pic_num].width,log_pic[logs[i].pic_num].height},(Rectangle){logs[i].position_x,logs[i].position_y,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
 }
 for(int i=0;i<tur_idx;i++)
 {
@@ -217,6 +290,10 @@ EndDrawing();
     for(int i=0;i<5;i++)
     {
         UnloadTexture(car_pic[i]);
+    }
+    for(int i=0;i<3;i++)
+    {
+        UnloadTexture(log_pic[i]);
     }
     UnloadTexture(frog[0]);
     UnloadTexture(frog[1]);
