@@ -199,11 +199,15 @@ int main(void)
 
 
     float frog_rot=0.0f;
+    float time=0.0f;
+    float max_time=10.0f;
+
     while(!WindowShouldClose())
 {
 float dt=GetFrameTime();
-
-        for (int i= 0; i < car_idx; i++) 
+    time+=dt;
+    if(time<max_time)
+     {   for (int i= 0; i < car_idx; i++) 
         {
             cars[i].position_x+=cars[i].speed*dt;
             if (cars[i].speed > 0 && cars[i].position_x > WIDTH) {
@@ -246,7 +250,14 @@ float dt=GetFrameTime();
             frog_pos.x += j_cap;
             frog_rot = 90.0f;
         }
+    }
+    else{
 
+        frog_pos.x = 8 * i_cap; 
+        frog_pos.y = 13 * j_cap;
+        time=0.0f;
+
+    }
 
 BeginDrawing();
 ClearBackground((Color){0,0,0,255});
