@@ -73,7 +73,7 @@ int main(void)
 
     car cars[14];
     turtle turtles[20];
-    logg logs[4*3+9*2+6*3];
+    logg logs[34];
 
 
 
@@ -143,7 +143,7 @@ int main(void)
         for(int i=0;i<4;i++)
         {
             turtles[tur_idx].speed=-120.0f;
-            turtles[tur_idx].position_x=(4*i+j)*i_cap;
+            turtles[tur_idx].position_x=(6*i+j)*i_cap;
             turtles[tur_idx].position_y=6*j_cap;
             tur_idx++;
         }
@@ -169,25 +169,6 @@ int main(void)
     }
     for(int i=0;i<2;i++)
     {
-        for(int j=0;j<9;j++)
-        {
-            logs[log_idx].speed=120.0f;
-            if(j==0)
-            {logs[log_idx].pic_num=0;}
-            else if(j==8)
-            {
-                logs[log_idx].pic_num=2;
-            }
-            else{
-                logs[log_idx].pic_num=1;
-            }
-            logs[log_idx].position_x=(2+12*i+j)*i_cap;
-            logs[log_idx].position_y=4*j_cap;
-            log_idx++;
-        }
-    }
-    for(int i=0;i<3;i++)
-    {
         for(int j=0;j<5;j++)
         {
             logs[log_idx].speed=120.0f;
@@ -200,7 +181,26 @@ int main(void)
             else{
                 logs[log_idx].pic_num=1;
             }
-            logs[log_idx].position_x=(2+12*i+j)*i_cap;
+            logs[log_idx].position_x=(10*i+j)*i_cap;
+            logs[log_idx].position_y=4*j_cap;
+            log_idx++;
+        }
+    }
+    for(int i=0;i<3;i++)
+    {
+        for(int j=0;j<4;j++)
+        {
+            logs[log_idx].speed=120.0f;
+            if(j==0)
+            {logs[log_idx].pic_num=0;}
+            else if(j==3)
+            {
+                logs[log_idx].pic_num=2;
+            }
+            else{
+                logs[log_idx].pic_num=1;
+            }
+            logs[log_idx].position_x=(6*i+j)*i_cap;
             logs[log_idx].position_y=5*j_cap;
             log_idx++;
         }
@@ -246,7 +246,7 @@ float dt=GetFrameTime();
             logs[i].position_x+=logs[i].speed*dt;
 
             if (  logs[i].position_x > WIDTH) {
-                logs[i].position_x = -i_cap;   
+                logs[i].position_x -= (WIDTH+i_cap);   
             }
         }                 
         if (IsKeyPressed(KEY_UP)) {
