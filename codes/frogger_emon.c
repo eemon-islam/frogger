@@ -375,6 +375,7 @@ BeginDrawing();
 ClearBackground((Color){0,0,0,255});
 DrawRectangle(river.x,river.y,WIDTH,j_cap*5,(Color){0, 43, 77,255});
 DrawRectangle(road.x,road.y,WIDTH,j_cap*5,(Color){0,0,0,255});
+
 for(int i=0;i<car_idx;i++)
 {
     DrawTexturePro(car_pic[cars[i].pic_num],(Rectangle){0.0f,0.0f,car_pic[cars[i].pic_num].width,car_pic[cars[i].pic_num].height},(Rectangle){cars[i].position_x,cars[i].position_y,cars[i].width,j_cap},Vector2Zero(),0.0f,WHITE);
@@ -406,7 +407,7 @@ if(state == GAME_OVER)
         DrawRectangle(0, 4*j_cap, WIDTH, 5*j_cap, BLACK);
         DrawText(TextFormat("GAME OVER"), 2*i_cap, 5*j_cap, 2*j_cap, RED);
         //DrawText(TextFormat(""), 2*i_cap, 5*j_cap, 2*j_cap, RED);
-
+        DrawText(TextFormat("SCORE: %d", score), 2*i_cap, 8*j_cap, j_cap, RED);
     }
 
 if(state == GAME_OVER && live>0)
