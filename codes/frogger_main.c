@@ -118,8 +118,8 @@ int main(void)
     }
     for(int i=0;i<3;i++)
     {
-    cars[car_idx].pic_num=1;
-     cars[car_idx].speed=-200.0f;
+        cars[car_idx].pic_num=1;
+        cars[car_idx].speed=-200.0f;
         cars[car_idx].position_x=(4+4*i)*i_cap;
         cars[car_idx].position_y=10*j_cap; 
         cars[car_idx].width=i_cap;     
@@ -170,14 +170,13 @@ int main(void)
         {
             logs[log_idx].speed=100.0f;
             if(j==0)
-            {logs[log_idx].pic_num=0;}
+            logs[log_idx].pic_num=0;
             else if(j==3)
-            {
-                logs[log_idx].pic_num=2;
-            }
-            else{
-                logs[log_idx].pic_num=1;
-            }
+            logs[log_idx].pic_num=2;
+
+            else
+            logs[log_idx].pic_num=1;
+
             logs[log_idx].position_x=(1+5*i+j)*i_cap;
             logs[log_idx].position_y=2*j_cap;
             log_idx++;
@@ -223,8 +222,6 @@ int main(void)
     }
 
 
-
-
     float frog_rot=0.0f;
     float time=0.0f;
     float max_time=30.0f;
@@ -235,253 +232,243 @@ int main(void)
     int y_level=-1;
 
     while(!WindowShouldClose())
-{
-float dt=GetFrameTime();
+    {
+        float dt=GetFrameTime();
 
-if(state==MENU)
-{
-
-}
-
-if(state == PLAYING)
-{
-    time+=dt;
-    if(time<max_time)
-     {   for (int i= 0; i < car_idx; i++) 
+        if(state==MENU)
         {
-            cars[i].position_x+=cars[i].speed*dt;
-            if (cars[i].speed > 0 && cars[i].position_x > WIDTH) {
-                cars[i].position_x=-cars[i].width;
-            } 
-            else if (cars[i].speed < 0 && cars[i].position_x+cars[i].width < 0) {
-                cars[i].position_x = WIDTH+cars[i].width;   
-            }
+
         }
 
-        for (int i= 0; i < tur_idx; i++) 
+        if(state == PLAYING)
         {
-            turtles[i].position_x+=turtles[i].speed*dt;
-
-            if (  turtles[i].position_x+i_cap < 0) {
-                turtles[i].position_x = WIDTH+i_cap;   
-            }
-        }     
-        for (int i= 0; i < log_idx; i++) 
-        {
-            logs[i].position_x+=logs[i].speed*dt;
-
-            if (logs[i].position_x > WIDTH) {
-                logs[i].position_x -= (WIDTH+i_cap);   
-            }
-        }                 
-        if (IsKeyPressed(KEY_UP)) {
-            frog_pos.y -= j_cap;
-            frog_rot = 0.0f;
-            y_level++;
-            PlaySound(jump);
-            
-            if( !visited[y_level] && y_level<11 && y_level>=0)
+            time+=dt;
+            if(time<max_time)
             {
-                visited[y_level]=true;
-                score+=10;
+                for (int i= 0; i < car_idx; i++) 
+                {
+                    cars[i].position_x+=cars[i].speed*dt;
+                    if (cars[i].speed > 0 && cars[i].position_x > WIDTH)
+                    cars[i].position_x=-cars[i].width;
+
+                    else if (cars[i].speed < 0 && cars[i].position_x+cars[i].width < 0)
+                    cars[i].position_x = WIDTH+cars[i].width;   
+
+                }
+
+                for (int i= 0; i < tur_idx; i++) 
+                {
+                    turtles[i].position_x+=turtles[i].speed*dt;
+
+                    if (  turtles[i].position_x+i_cap < 0) {
+                        turtles[i].position_x = WIDTH+i_cap;   
+                    }
+                }     
+                for (int i= 0; i < log_idx; i++) 
+                {
+                    logs[i].position_x+=logs[i].speed*dt;
+
+                    if (logs[i].position_x > WIDTH) {
+                        logs[i].position_x -= (WIDTH+i_cap);   
+                    }
+                }                 
+                if (IsKeyPressed(KEY_UP)) 
+                {
+                    frog_pos.y -= j_cap;
+                    frog_rot = 0.0f;
+                    y_level++;
+                    PlaySound(jump);
+                    
+                    if( !visited[y_level] && y_level<11 && y_level>=0)
+                    {
+                        visited[y_level]=true;
+                        score+=10;
+                    }
+                }
+                if (IsKeyPressed(KEY_DOWN)) 
+                {
+                    frog_pos.y += j_cap;
+                    frog_rot = 180.0f;
+                    y_level--;
+                    PlaySound(jump);
+                }
+                if (IsKeyPressed(KEY_LEFT)) 
+                {
+                    frog_pos.x -= i_cap;
+                    frog_rot = 270.0f;
+                    PlaySound(jump);
+                }
+                if (IsKeyPressed(KEY_RIGHT)) 
+                {
+                    frog_pos.x += j_cap;
+                    frog_rot = 90.0f;
+                    PlaySound(jump);
+                }
+                if(frog_pos.y<20)
+                frog_pos.y=1*j_cap;
+                else if(frog_pos.y>13*j_cap)
+                {
+                    frog_pos.y=13*j_cap;
+                }
+                else if(frog_pos.x<0)
+                {
+                    frog_pos.x=0;
+                }
+                else if(frog_pos.x>WIDTH)
+                {
+                    frog_pos.x=WIDTH;
+                }
+            }
+            else
+            {
+                frog_pos.x = 8 * i_cap; 
+                frog_pos.y = 13 * j_cap;
+                time=0.0f;
+                for(int k = 0; k < 11; k++)
+                visited[k] = false;
+
+            }
+            for(int i=0; i<car_idx; i++)
+            {
+                if(CheckCollisionRecs((Rectangle){frog_pos.x,frog_pos.y,i_cap*0.5,j_cap*0.6}, (Rectangle){cars[i].position_x,cars[i].position_y,cars[i].width*.7,j_cap*.7}))
+                {
+                    frog_pos.y=13*j_cap;
+                    live--;
+                    if (live<=0) 
+                    {
+                        state=GAME_OVER;
+                    }
+                }
+            }
+
+            bool inriver=(frog_pos.y > river.y-j_cap && frog_pos.y < river.y + j_cap*4);
+            bool onplatform=false;
+            if(inriver)
+            {
+                for(int i=0; i<tur_idx; i++)
+                {
+                    if((((CheckCollisionRecs((Rectangle){frog_pos.x,frog_pos.y,i_cap*.7,j_cap*.7}, (Rectangle){turtles[i].position_x,turtles[i].position_y,i_cap*.7,j_cap*.7})))))
+                    {
+                        onplatform = true;
+                        frog_pos.x += turtles[i].speed * dt;
+                        break;
+                    }
+                }
+                for(int i=0; i<log_idx; i++)
+                {
+                    if((((CheckCollisionRecs((Rectangle){frog_pos.x,frog_pos.y,i_cap*.7,j_cap*.7}, (Rectangle){logs[i].position_x,logs[i].position_y,i_cap*.7,j_cap*.7})))))
+                    {
+                        onplatform = true;
+                        frog_pos.x += logs[i].speed * dt;
+                        break;
+                    }
+                }
+
+
+                if(frog_pos.x<0 || frog_pos.x>(WIDTH-i_cap))
+                {
+                    live--;
+                    frog_pos.y=13*j_cap;
+                    frog_pos.x=WIDTH/2;
+                    if (live<=0) 
+                    state=GAME_OVER;
+                    
+                }
+
+
+                if(!onplatform)
+                {
+                    frog_pos.y=13*j_cap;
+                    live--;
+                    if (live<=0) 
+                    {
+                        state=GAME_OVER;
+                    }
+                }
+            }
+            for(int i=1; i<=14; i+=2)
+            {
+                if(CheckCollisionRecs((Rectangle){frog_pos.x,frog_pos.y,i_cap*.7,j_cap*.7}, (Rectangle){i*i_cap, j_cap, .3*i_cap, .1*j_cap}))
+                {
+                    delay_time+=dt;
+                    if(delay_time>=.2)
+                    state=GAME_OVER;
+                }
             }
         }
-        if (IsKeyPressed(KEY_DOWN)) {
-            frog_pos.y += j_cap;
-            frog_rot = 180.0f;
-            y_level--;
-            PlaySound(jump);
-        }
-        if (IsKeyPressed(KEY_LEFT)) {
-            frog_pos.x -= i_cap;
-            frog_rot = 270.0f;
-            PlaySound(jump);
-        }
-        if (IsKeyPressed(KEY_RIGHT)) {
-            frog_pos.x += j_cap;
-            frog_rot = 90.0f;
-            PlaySound(jump);
-        }
-        /*if(frog_pos.y<1*j_cap)
+        BeginDrawing();
+        ClearBackground((Color){0,0,0,255});
+        DrawRectangle(river.x, river.y,WIDTH,j_cap*5,(Color){0, 43, 77,255});
+        DrawRectangle(road.x, road.y, WIDTH, j_cap*5, (Color){0,0,0,255});
+
+        /*if(state==MENU)
         {
-            frog_pos.y=1*j_cap;
+            ClearBackground((Color){0,0,0,255});
+            DrawRectangle()
         }*/
-        if(frog_pos.y<20)
-        frog_pos.y=1*j_cap;
-        else if(frog_pos.y>13*j_cap)
+
+        DrawRectangle(0, 0, WIDTH, 2*j_cap, (Color){60, 100, 60, 255});
+        for(int i=1; i<=14; i+=2)
+        DrawRectangle(i*i_cap, j_cap, i_cap, j_cap, BLACK);
+
+        for(int i=0;i<car_idx;i++)
         {
-            frog_pos.y=13*j_cap;
+            DrawTexturePro(car_pic[cars[i].pic_num],(Rectangle){0.0f,0.0f,car_pic[cars[i].pic_num].width,car_pic[cars[i].pic_num].height},(Rectangle){cars[i].position_x,cars[i].position_y,cars[i].width,j_cap},Vector2Zero(),0.0f,WHITE);
         }
-        else if(frog_pos.x<0)
+        for(int i=0;i<log_idx;i++)
         {
-            frog_pos.x=0;
+            DrawTexturePro(log_pic[logs[i].pic_num],(Rectangle){0.0f,0.0f,log_pic[logs[i].pic_num].width,log_pic[logs[i].pic_num].height},(Rectangle){logs[i].position_x,logs[i].position_y,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
         }
-        else if(frog_pos.x>WIDTH)
+        for(int i=0;i<tur_idx;i++)
         {
-            frog_pos.x=WIDTH;
+        DrawTexturePro(turtle_pic,(Rectangle){0.0f,0.0f,turtle_pic.width,turtle_pic.height},(Rectangle){turtles[i].position_x,turtles[i].position_y,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
         }
+        float pos_x=0.0f;
+        for(int i=0;i<15;i++)
+        {
+            DrawTexturePro(ground,(Rectangle){0.0f,0.0f,ground.width,ground.height},(Rectangle){pos_x,7*j_cap,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
+            pos_x+=i_cap;
+        }
+        pos_x=0.0f;
+        for(int i=0;i<15;i++)
+        {
+            DrawTexturePro(ground,(Rectangle){0.0f,0.0f,ground.width,ground.height},(Rectangle){pos_x,13*j_cap,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
+            pos_x+=i_cap;
+        }
+        if(state == PLAYING)
+        DrawTexturePro(frog[0],(Rectangle){0.0f,0.0f,frog[0].width,frog[0].height},(Rectangle){frog_pos.x+i_cap/2.0f,frog_pos.y+j_cap/2.0f,i_cap,j_cap},(Vector2){i_cap/2.0f,j_cap/2.0f},frog_rot,WHITE);
+
+
+        if(state == GAME_OVER && live<=0) 
+        {
+            DrawRectangle(0, 4*j_cap, WIDTH, 5*j_cap, BLACK);
+            DrawText(TextFormat("GAME OVER"), 2*i_cap, 5*j_cap, 2*j_cap, RED);
+            DrawText(TextFormat("SCORE: %d", score), 2*i_cap, 8*j_cap, j_cap, RED);
+        }
+
+        if(state == GAME_OVER && live>0)
+        {
+            DrawRectangle(0, 4*j_cap, WIDTH, 5*j_cap, BLACK);
+            DrawText(TextFormat("SUCCESS!"), 2*i_cap, 5*j_cap, 2*j_cap, RED);
+            DrawText(TextFormat("SCORE: %d", score), 2*i_cap, 8*j_cap, j_cap, RED);
+        }
+        if(state == PLAYING)
+        {
+            DrawText(TextFormat("SCORE: %d", score), 13*i_cap, 14*j_cap, 20, LIGHTGRAY);
+            DrawText(TextFormat("TIME %.2f",max_time- time), 10*i_cap, 14*j_cap, 20, LIGHTGRAY);
+            DrawText(TextFormat("LIVE: %d",live), 6*i_cap, 14*j_cap, 20, LIGHTGRAY);
+        }
+
+        pos_x=0.0f;
+        for(int i=0;i<15;i++)
+        {
+            DrawTexturePro(upper_grass,(Rectangle){0.0f,0.0f,upper_grass.width,upper_grass.height},(Rectangle){pos_x,0.0f,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
+            pos_x+=i_cap;
+        }
+
+        EndDrawing();
+
     }
-    else{
-
-        frog_pos.x = 8 * i_cap; 
-        frog_pos.y = 13 * j_cap;
-        time=0.0f;
-        for(int k = 0; k < 11; k++) {
-        visited[k] = false;
-    }
-    }
-    for(int i=0; i<car_idx; i++)
-    {
-        if(CheckCollisionRecs((Rectangle){frog_pos.x,frog_pos.y,i_cap*0.5,j_cap*0.6}, (Rectangle){cars[i].position_x,cars[i].position_y,cars[i].width*.7,j_cap*.7}))
-        {
-            frog_pos.y=13*j_cap;
-            live--;
-            if (live<=0) 
-            {
-                state=GAME_OVER;
-            }
-        }
-    }
-
-
-    bool inriver=(frog_pos.y > river.y-j_cap && frog_pos.y < river.y + j_cap*4);
-    bool onplatform=false;
-    if(inriver)
-    {
-        for(int i=0; i<tur_idx; i++)
-        {
-            if((((CheckCollisionRecs((Rectangle){frog_pos.x,frog_pos.y,i_cap*.7,j_cap*.7}, (Rectangle){turtles[i].position_x,turtles[i].position_y,i_cap*.7,j_cap*.7})))))
-            {
-                onplatform = true;
-                frog_pos.x += turtles[i].speed * dt;
-                break;
-            }
-            //frog_pos.y=13*j_cap;
-        }
-        for(int i=0; i<log_idx; i++)
-        {
-            if((((CheckCollisionRecs((Rectangle){frog_pos.x,frog_pos.y,i_cap*.7,j_cap*.7}, (Rectangle){logs[i].position_x,logs[i].position_y,i_cap*.7,j_cap*.7})))))
-            {
-                onplatform = true;
-                frog_pos.x += logs[i].speed * dt;
-                break;
-            }
-            //frog_pos.y=13*j_cap;
-        }
-
-
-        if(frog_pos.x<0 || frog_pos.x>(WIDTH-i_cap))
-        {
-            live--;
-            frog_pos.y=13*j_cap;
-            frog_pos.x=WIDTH/2;
-            if (live<=0) 
-            {
-                state=GAME_OVER;
-            }
-            
-        }
-
-
-        if(!onplatform)
-        {
-            frog_pos.y=13*j_cap;
-            live--;
-            if (live<=0) 
-            {
-                state=GAME_OVER;
-            }
-        }
-        //if(score==110 && !inriver)
-        //state=GAME_OVER;
-    }
-    for(int i=1; i<=14; i+=2)
-    {
-        //delay_time+=dt;
-        if(CheckCollisionRecs((Rectangle){frog_pos.x,frog_pos.y,i_cap*.7,j_cap*.7}, (Rectangle){i*i_cap, j_cap, .3*i_cap, .1*j_cap}))
-        {
-            delay_time+=dt;
-            if(delay_time>=.2)
-            state=GAME_OVER;
-        }
-    }
-}
-BeginDrawing();
-ClearBackground((Color){0,0,0,255});
-DrawRectangle(river.x,river.y,WIDTH,j_cap*5,(Color){0, 43, 77,255});
-DrawRectangle(road.x,road.y,WIDTH,j_cap*5,(Color){0,0,0,255});
-
-/*if(state==MENU)
-{
-    ClearBackground((Color){0,0,0,255});
-    DrawRectangle()
-}*/
-
-DrawRectangle(0, 0, WIDTH, 2*j_cap, (Color){60, 100, 60, 255});
-for(int i=1; i<=14; i+=2)
-DrawRectangle(i*i_cap, j_cap, i_cap, j_cap, BLACK);
-
-for(int i=0;i<car_idx;i++)
-{
-    DrawTexturePro(car_pic[cars[i].pic_num],(Rectangle){0.0f,0.0f,car_pic[cars[i].pic_num].width,car_pic[cars[i].pic_num].height},(Rectangle){cars[i].position_x,cars[i].position_y,cars[i].width,j_cap},Vector2Zero(),0.0f,WHITE);
-}
-for(int i=0;i<log_idx;i++)
-{
-    DrawTexturePro(log_pic[logs[i].pic_num],(Rectangle){0.0f,0.0f,log_pic[logs[i].pic_num].width,log_pic[logs[i].pic_num].height},(Rectangle){logs[i].position_x,logs[i].position_y,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
-}
-for(int i=0;i<tur_idx;i++)
-{
-  DrawTexturePro(turtle_pic,(Rectangle){0.0f,0.0f,turtle_pic.width,turtle_pic.height},(Rectangle){turtles[i].position_x,turtles[i].position_y,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
-}
-float pos_x=0.0f;
-for(int i=0;i<15;i++)
-{
-    DrawTexturePro(ground,(Rectangle){0.0f,0.0f,ground.width,ground.height},(Rectangle){pos_x,7*j_cap,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
-    pos_x+=i_cap;
-}
-pos_x=0.0f;
-for(int i=0;i<15;i++)
-{
-    DrawTexturePro(ground,(Rectangle){0.0f,0.0f,ground.width,ground.height},(Rectangle){pos_x,13*j_cap,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
-    pos_x+=i_cap;
-}
-if(state == PLAYING)
-DrawTexturePro(frog[0],(Rectangle){0.0f,0.0f,frog[0].width,frog[0].height},(Rectangle){frog_pos.x+i_cap/2.0f,frog_pos.y+j_cap/2.0f,i_cap,j_cap},(Vector2){i_cap/2.0f,j_cap/2.0f},frog_rot,WHITE);
-
-
-
-if(state == GAME_OVER && live<=0) 
-{
-    DrawRectangle(0, 4*j_cap, WIDTH, 5*j_cap, BLACK);
-    DrawText(TextFormat("GAME OVER"), 2*i_cap, 5*j_cap, 2*j_cap, RED);
-    DrawText(TextFormat("SCORE: %d", score), 2*i_cap, 8*j_cap, j_cap, RED);
-}
-
-if(state == GAME_OVER && live>0)
-{
-    DrawRectangle(0, 4*j_cap, WIDTH, 5*j_cap, BLACK);
-    DrawText(TextFormat("SUCCESS!"), 2*i_cap, 5*j_cap, 2*j_cap, RED);
-    DrawText(TextFormat("SCORE: %d", score), 2*i_cap, 8*j_cap, j_cap, RED);
-}
-if(state == PLAYING)
-{
-    DrawText(TextFormat("SCORE: %d", score), 13*i_cap, 14*j_cap, 20, LIGHTGRAY);
-    DrawText(TextFormat("TIME %.2f",max_time- time), 10*i_cap, 14*j_cap, 20, LIGHTGRAY);
-    DrawText(TextFormat("LIVE: %d",live), 6*i_cap, 14*j_cap, 20, LIGHTGRAY);
-}
-
-pos_x=0.0f;
-for(int i=0;i<15;i++)
-{
-    DrawTexturePro(upper_grass,(Rectangle){0.0f,0.0f,upper_grass.width,upper_grass.height},(Rectangle){pos_x,0.0f,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
-    pos_x+=i_cap;
-}
-
-
-EndDrawing();
-
-
-}
 
     for(int i=0;i<5;i++)
     {
