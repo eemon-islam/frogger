@@ -32,13 +32,15 @@ typedef struct  logg
     int pic_num;
 }logg;
 
-typedef enum { PLAYING, GAME_OVER }GameState;
+typedef enum {MENU, PLAYING, GAME_OVER }GameState;
 GameState state=PLAYING;
-
+//GameState state=MENU;
 
 int main(void)
 {   float i_cap=WIDTH/15.0f;
     float j_cap=HEIGHT/15.0f;
+
+    float delay_time=0;
 
     Vector2 river ={0.0f,j_cap*2};
     Vector2 road={0.0f,j_cap*8};
@@ -224,6 +226,12 @@ int main(void)
     while(!WindowShouldClose())
 {
 float dt=GetFrameTime();
+
+if(state==MENU)
+{
+
+}
+
 if(state == PLAYING)
 {
     time+=dt;
@@ -283,10 +291,12 @@ if(state == PLAYING)
             frog_rot = 90.0f;
             PlaySound(jump);
         }
-        if(frog_pos.y<1*j_cap)
+        /*if(frog_pos.y<1*j_cap)
         {
             frog_pos.y=1*j_cap;
-        }
+        }*/
+        if(frog_pos.y<20)
+        frog_pos.y=1*j_cap;
         else if(frog_pos.y>13*j_cap)
         {
             frog_pos.y=13*j_cap;
@@ -311,70 +321,94 @@ if(state == PLAYING)
     }
     for(int i=0; i<car_idx; i++)
     {
-    if(CheckCollisionRecs((Rectangle){frog_pos.x,frog_pos.y,i_cap*0.5,j_cap*0.6}, (Rectangle){cars[i].position_x,cars[i].position_y,cars[i].width*.7,j_cap*.7}))
-    {
-        frog_pos.y=13*j_cap;
-        live--;
-        if (live<=0) 
+        if(CheckCollisionRecs((Rectangle){frog_pos.x,frog_pos.y,i_cap*0.5,j_cap*0.6}, (Rectangle){cars[i].position_x,cars[i].position_y,cars[i].width*.7,j_cap*.7}))
         {
-            state=GAME_OVER;
+            frog_pos.y=13*j_cap;
+            live--;
+            if (live<=0) 
+            {
+                state=GAME_OVER;
+            }
         }
     }
-    }
 
 
-    bool inriver=(frog_pos.y >= river.y-j_cap && frog_pos.y < river.y + j_cap*4);
+    bool inriver=(frog_pos.y > river.y-j_cap && frog_pos.y < river.y + j_cap*4);
     bool onplatform=false;
     if(inriver)
     {
-    for(int i=0; i<tur_idx; i++)
-    {
-        if((((CheckCollisionRecs((Rectangle){frog_pos.x,frog_pos.y,i_cap*.7,j_cap*.7}, (Rectangle){turtles[i].position_x,turtles[i].position_y,i_cap*.7,j_cap*.7})))))
+        for(int i=0; i<tur_idx; i++)
         {
-            onplatform = true;
-            frog_pos.x += turtles[i].speed * dt;
-            break;
+            if((((CheckCollisionRecs((Rectangle){frog_pos.x,frog_pos.y,i_cap*.7,j_cap*.7}, (Rectangle){turtles[i].position_x,turtles[i].position_y,i_cap*.7,j_cap*.7})))))
+            {
+                onplatform = true;
+                frog_pos.x += turtles[i].speed * dt;
+                break;
+            }
+            //frog_pos.y=13*j_cap;
         }
-        //frog_pos.y=13*j_cap;
-    }
-    for(int i=0; i<log_idx; i++)
-    {
-        if((((CheckCollisionRecs((Rectangle){frog_pos.x,frog_pos.y,i_cap*.7,j_cap*.7}, (Rectangle){logs[i].position_x,logs[i].position_y,i_cap*.7,j_cap*.7})))))
+        for(int i=0; i<log_idx; i++)
         {
-            onplatform = true;
-            frog_pos.x += logs[i].speed * dt;
-            break;
+            if((((CheckCollisionRecs((Rectangle){frog_pos.x,frog_pos.y,i_cap*.7,j_cap*.7}, (Rectangle){logs[i].position_x,logs[i].position_y,i_cap*.7,j_cap*.7})))))
+            {
+                onplatform = true;
+                frog_pos.x += logs[i].speed * dt;
+                break;
+            }
+            //frog_pos.y=13*j_cap;
         }
-        //frog_pos.y=13*j_cap;
-    }
-    if(frog_pos.x<0 || frog_pos.x>(WIDTH-i_cap))
-    {
-        live--;
-        frog_pos.y=13*j_cap;
-        frog_pos.x=WIDTH/2;
-        if (live<=0) 
-        {
-            state=GAME_OVER;
-        }
-        
-    }
 
 
-    if(!onplatform)
-    {
-        frog_pos.y=13*j_cap;
-        live--;
-        if (live<=0) 
+        if(frog_pos.x<0 || frog_pos.x>(WIDTH-i_cap))
         {
+            live--;
+            frog_pos.y=13*j_cap;
+            frog_pos.x=WIDTH/2;
+            if (live<=0) 
+            {
+                state=GAME_OVER;
+            }
+            
+        }
+
+
+        if(!onplatform)
+        {
+            frog_pos.y=13*j_cap;
+            live--;
+            if (live<=0) 
+            {
+                state=GAME_OVER;
+            }
+        }
+        //if(score==110 && !inriver)
+        //state=GAME_OVER;
+    }
+    for(int i=1; i<=14; i+=2)
+    {
+        //delay_time+=dt;
+        if(CheckCollisionRecs((Rectangle){frog_pos.x,frog_pos.y,i_cap*.7,j_cap*.7}, (Rectangle){i*i_cap, j_cap, .3*i_cap, .1*j_cap}))
+        {
+            delay_time+=dt;
+            if(delay_time>=.2)
             state=GAME_OVER;
         }
     }
- }
 }
 BeginDrawing();
 ClearBackground((Color){0,0,0,255});
 DrawRectangle(river.x,river.y,WIDTH,j_cap*5,(Color){0, 43, 77,255});
 DrawRectangle(road.x,road.y,WIDTH,j_cap*5,(Color){0,0,0,255});
+
+/*if(state==MENU)
+{
+    ClearBackground((Color){0,0,0,255});
+    DrawRectangle()
+}*/
+
+DrawRectangle(0, 0, WIDTH, 2*j_cap, (Color){60, 100, 60, 255});
+for(int i=1; i<=14; i+=2)
+DrawRectangle(i*i_cap, j_cap, i_cap, j_cap, BLACK);
 
 for(int i=0;i<car_idx;i++)
 {
@@ -402,7 +436,7 @@ for(int i=0;i<15;i++)
 }
 if(state == PLAYING)
 DrawTexturePro(frog[0],(Rectangle){0.0f,0.0f,frog[0].width,frog[0].height},(Rectangle){frog_pos.x+i_cap/2.0f,frog_pos.y+j_cap/2.0f,i_cap,j_cap},(Vector2){i_cap/2.0f,j_cap/2.0f},frog_rot,WHITE);
-if(state == GAME_OVER)
+if(state == GAME_OVER && live<=0) 
     {
         DrawRectangle(0, 4*j_cap, WIDTH, 5*j_cap, BLACK);
         DrawText(TextFormat("GAME OVER"), 2*i_cap, 5*j_cap, 2*j_cap, RED);
@@ -411,15 +445,18 @@ if(state == GAME_OVER)
     }
 
 if(state == GAME_OVER && live>0)
-    {
-        DrawRectangle(0, 4*j_cap, WIDTH, 5*j_cap, BLACK);
-        DrawText(TextFormat("SUCCESS!"), 2*i_cap, 5*j_cap, 2*j_cap, RED);
+{
+    DrawRectangle(0, 4*j_cap, WIDTH, 5*j_cap, BLACK);
+    DrawText(TextFormat("SUCCESS!"), 2*i_cap, 5*j_cap, 2*j_cap, RED);
+    DrawText(TextFormat("SCORE: %d", score), 2*i_cap, 8*j_cap, j_cap, RED);
+}
+if(state == PLAYING)
+{
+    DrawText(TextFormat("SCORE: %d", score), 13*i_cap, 14*j_cap, 20, LIGHTGRAY);
+    DrawText(TextFormat("TIME %.2f",max_time- time), 10*i_cap, 14*j_cap, 20, LIGHTGRAY);
+    DrawText(TextFormat("LIVE: %d",live), 6*i_cap, 14*j_cap, 20, LIGHTGRAY);
+}
 
-    }
-
-DrawText(TextFormat("SCORE: %d", score), 13*i_cap, 14*j_cap, 20, LIGHTGRAY);
-DrawText(TextFormat("TIME %.2f",max_time- time), 10*i_cap, 14*j_cap, 20, LIGHTGRAY);
-DrawText(TextFormat("LIVE: %d",live), 6*i_cap, 14*j_cap, 20, LIGHTGRAY);
 pos_x=0.0f;
 for(int i=0;i<15;i++)
 {
