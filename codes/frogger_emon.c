@@ -32,7 +32,7 @@ typedef struct  logg
     int pic_num;
 }logg;
 
-typedef enum {MENU, PLAYING, GAME_OVER }GameState;
+typedef enum {MENU, PLAYING, DYING, GAME_OVER}GameState;
 GameState state=PLAYING;
 //GameState state=MENU;
 
@@ -52,6 +52,7 @@ int main(void)
     Texture2D turtle_pic;
     Texture2D log_pic[3];
     Texture2D upper_grass;
+    Texture2D death_pic[7];
 
 
     InitWindow(WIDTH,HEIGHT,"FROGGER");
@@ -74,7 +75,17 @@ int main(void)
     log_pic[1]= LoadTexture("asset/log_middle.png");
     log_pic[2]= LoadTexture("asset/log_right.png");
     upper_grass = LoadTexture("asset/uppergrass.png"); 
-    
+
+    death_pic[0]= LoadTexture("asset/frog_death0000.png");
+    death_pic[1]= LoadTexture("asset/frog_death0001.png");
+    death_pic[2]= LoadTexture("asset/frog_death0002.png");
+    death_pic[3]= LoadTexture("asset/frog_death0003.png");
+    death_pic[4]= LoadTexture("asset/frog_death0004.png");
+    death_pic[5]= LoadTexture("asset/frog_death0005.png");
+    death_pic[6]= LoadTexture("asset/frog_death0006.png");
+    int death_frame = 0;
+    float death_timer=0.0;
+    float frame_time = .1;
 
     car cars[14];
     turtle turtles[20];
@@ -436,13 +447,15 @@ for(int i=0;i<15;i++)
 }
 if(state == PLAYING)
 DrawTexturePro(frog[0],(Rectangle){0.0f,0.0f,frog[0].width,frog[0].height},(Rectangle){frog_pos.x+i_cap/2.0f,frog_pos.y+j_cap/2.0f,i_cap,j_cap},(Vector2){i_cap/2.0f,j_cap/2.0f},frog_rot,WHITE);
+
+
+
 if(state == GAME_OVER && live<=0) 
-    {
-        DrawRectangle(0, 4*j_cap, WIDTH, 5*j_cap, BLACK);
-        DrawText(TextFormat("GAME OVER"), 2*i_cap, 5*j_cap, 2*j_cap, RED);
-        //DrawText(TextFormat(""), 2*i_cap, 5*j_cap, 2*j_cap, RED);
-        DrawText(TextFormat("SCORE: %d", score), 2*i_cap, 8*j_cap, j_cap, RED);
-    }
+{
+    DrawRectangle(0, 4*j_cap, WIDTH, 5*j_cap, BLACK);
+    DrawText(TextFormat("GAME OVER"), 2*i_cap, 5*j_cap, 2*j_cap, RED);
+    DrawText(TextFormat("SCORE: %d", score), 2*i_cap, 8*j_cap, j_cap, RED);
+}
 
 if(state == GAME_OVER && live>0)
 {
