@@ -2,7 +2,6 @@
 #include "raymath.h"
 #include<stdbool.h>
 
-
 #define HEIGHT 1000
 #define WIDTH 1200
 
@@ -32,9 +31,8 @@ typedef struct  logg
     int pic_num;
 }logg;
 
-typedef enum {MENU, PLAYING, DYING, GAME_OVER}GameState;
-GameState state=PLAYING;
-//GameState state=MENU;
+typedef enum {MENU, PLAYING, DYING, GAME_OVER, CREDIT}GameState;
+GameState state=MENU;
 
 int main(void)
 {   float i_cap=WIDTH/15.0f;
@@ -74,7 +72,7 @@ int main(void)
     log_pic[0]= LoadTexture("asset/log_left.png");
     log_pic[1]= LoadTexture("asset/log_middle.png");
     log_pic[2]= LoadTexture("asset/log_right.png");
-    upper_grass = LoadTexture("asset/uppergrass.png"); 
+    upper_grass = LoadTexture("asset/flower_ground_2.png"); 
 
     death_pic[0]= LoadTexture("asset/frog_death0000.png");
     death_pic[1]= LoadTexture("asset/frog_death0001.png");
@@ -85,7 +83,7 @@ int main(void)
     death_pic[6]= LoadTexture("asset/frog_death0006.png");
     int death_frame = 0;
     float death_timer=0.0;
-    float frame_time = .1;
+    float frame_time = .25;
 
     car cars[14];
     turtle turtles[20];
@@ -129,7 +127,7 @@ int main(void)
     for(int i=0;i<3;i++)
     {
         cars[car_idx].pic_num=3;
-         cars[car_idx].speed=+150.0f;        
+        cars[car_idx].speed=+150.0f;        
         cars[car_idx].position_x=(6+4*i)*i_cap;
         cars[car_idx].position_y=11*j_cap;
         cars[car_idx].width=i_cap;  
@@ -138,7 +136,7 @@ int main(void)
     for(int i=0;i<3;i++)
     {
         cars[car_idx].pic_num=0;
-         cars[car_idx].speed=-130.0f;
+        cars[car_idx].speed=-130.0f;
         cars[car_idx].position_x=(2+4*i)*i_cap;
         cars[car_idx].position_y=12*j_cap;  
         cars[car_idx].width=i_cap;        
@@ -221,11 +219,16 @@ int main(void)
         }
     }
 
-
     float frog_rot=0.0f;
     float time=0.0f;
     float max_time=30.0f;
+    float pos_x=0.0f;
 
+    Rectangle start_btn = {WIDTH/2-100, HEIGHT/2, 200, 60};
+    Rectangle credit_btn = {WIDTH/2-100, HEIGHT/2+80, 200, 60};
+    Rectangle back_btn = {WIDTH/2-100, HEIGHT/2, 200-150, 60};
+    Rectangle restart_btn = {WIDTH/2-100, 10*j_cap, 200, 60};
+    
     int live=3;
     int score=0;
     bool visited[11]={false};
@@ -235,11 +238,14 @@ int main(void)
     {
         float dt=GetFrameTime();
 
-        if(state==MENU)
+        if(state==CREDIT)
         {
-
+            Vector2 mouse = GetMousePosition();
+            if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mouse, back_btn))
+            {
+                state = MENU;
+            }
         }
-
         if(state == PLAYING)
         {
             time+=dt;
@@ -332,11 +338,11 @@ int main(void)
             {
                 if(CheckCollisionRecs((Rectangle){frog_pos.x,frog_pos.y,i_cap*0.5,j_cap*0.6}, (Rectangle){cars[i].position_x,cars[i].position_y,cars[i].width*.7,j_cap*.7}))
                 {
-                    frog_pos.y=13*j_cap;
-                    live--;
-                    if (live<=0) 
+                    if (state==PLAYING) 
                     {
-                        state=GAME_OVER;
+                        state=DYING;
+                        death_timer=0;
+                        death_frame=0;
                     }
                 }
             }
@@ -364,25 +370,25 @@ int main(void)
                     }
                 }
 
-
                 if(frog_pos.x<0 || frog_pos.x>(WIDTH-i_cap))
                 {
-                    live--;
-                    frog_pos.y=13*j_cap;
-                    frog_pos.x=WIDTH/2;
-                    if (live<=0) 
-                    state=GAME_OVER;
+                    if (state==PLAYING) 
+                    {
+                        state=DYING;
+                        death_timer=0;
+                        death_frame=0;
+                    }
                     
                 }
 
 
                 if(!onplatform)
                 {
-                    frog_pos.y=13*j_cap;
-                    live--;
-                    if (live<=0) 
+                    if (state==PLAYING) 
                     {
-                        state=GAME_OVER;
+                        state=DYING;
+                        death_timer=0;
+                        death_frame=0;
                     }
                 }
             }
@@ -396,54 +402,133 @@ int main(void)
                 }
             }
         }
+
+        if(state==DYING)
+        {
+            death_timer+=dt;
+            death_frame=(int)(death_timer/frame_time);
+            if(death_frame>=6)
+            {
+                live--;
+                if (live<=0) 
+                state = GAME_OVER;
+                else 
+                {
+                    frog_pos.x =8*i_cap;
+                    frog_pos.y=13*j_cap;
+                    state=PLAYING;
+                }
+            } 
+        }
+        if(state==MENU)
+        {
+            Vector2 mouse = GetMousePosition();
+            if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
+                if(CheckCollisionPointRec(mouse, start_btn))
+                {
+                    frog_pos=(Vector2){7*i_cap, 13*j_cap};
+                    time =0;
+                    score=0;
+                    frog_rot=0;
+                    live=3;
+                    y_level=-1;
+                    delay_time=0;
+                    death_timer=0;
+                    death_frame=0;
+                    for(int k=0; k<11; k++)
+                    visited[k]=false;
+                    state=PLAYING;
+                }
+                if(CheckCollisionPointRec(mouse,credit_btn))
+                {
+                    state = CREDIT;
+                }
+            }
+        }
+        if(state==GAME_OVER)
+        {
+            Vector2 mouse=GetMousePosition();
+            if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mouse, restart_btn))
+            {
+                frog_pos=(Vector2){7*i_cap, 13*j_cap};
+                time =0;
+                score=0;
+                frog_rot=0;
+                live=3;
+                y_level=-1;
+                delay_time=0;
+                death_timer=0;
+                death_frame=0;
+                for(int k=0; k<11; k++)
+                visited[k]=false;
+                state=MENU;
+            }
+        }
+
         BeginDrawing();
         ClearBackground((Color){0,0,0,255});
-        DrawRectangle(river.x, river.y,WIDTH,j_cap*5,(Color){0, 43, 77,255});
-        DrawRectangle(road.x, road.y, WIDTH, j_cap*5, (Color){0,0,0,255});
+        if(state==PLAYING || state==DYING)
+        {
+            DrawRectangle(river.x, river.y,WIDTH,j_cap*5,(Color){0, 43, 77,255});
+            DrawRectangle(road.x, road.y, WIDTH, j_cap*5, (Color){0,0,0,255});
 
-        /*if(state==MENU)
-        {
-            ClearBackground((Color){0,0,0,255});
-            DrawRectangle()
-        }*/
+            DrawRectangle(0, 0, WIDTH, 2*j_cap, (Color){60, 100, 60, 255});
+            for(int i=1; i<=16; i+=2)
+            {
+                DrawRectangle(i*i_cap, j_cap, i_cap, j_cap, BLACK);
+                DrawTexturePro(upper_grass, (Rectangle){0.0f, 0.0f,  upper_grass.width, upper_grass.height}, (Rectangle){(i-1)*i_cap, j_cap, i_cap, j_cap}, Vector2Zero(), 0.0f, WHITE);
+            }
 
-        DrawRectangle(0, 0, WIDTH, 2*j_cap, (Color){60, 100, 60, 255});
-        for(int i=1; i<=14; i+=2)
-        DrawRectangle(i*i_cap, j_cap, i_cap, j_cap, BLACK);
-
-        for(int i=0;i<car_idx;i++)
-        {
-            DrawTexturePro(car_pic[cars[i].pic_num],(Rectangle){0.0f,0.0f,car_pic[cars[i].pic_num].width,car_pic[cars[i].pic_num].height},(Rectangle){cars[i].position_x,cars[i].position_y,cars[i].width,j_cap},Vector2Zero(),0.0f,WHITE);
-        }
-        for(int i=0;i<log_idx;i++)
-        {
-            DrawTexturePro(log_pic[logs[i].pic_num],(Rectangle){0.0f,0.0f,log_pic[logs[i].pic_num].width,log_pic[logs[i].pic_num].height},(Rectangle){logs[i].position_x,logs[i].position_y,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
-        }
-        for(int i=0;i<tur_idx;i++)
-        {
-        DrawTexturePro(turtle_pic,(Rectangle){0.0f,0.0f,turtle_pic.width,turtle_pic.height},(Rectangle){turtles[i].position_x,turtles[i].position_y,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
-        }
-        float pos_x=0.0f;
-        for(int i=0;i<15;i++)
-        {
-            DrawTexturePro(ground,(Rectangle){0.0f,0.0f,ground.width,ground.height},(Rectangle){pos_x,7*j_cap,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
-            pos_x+=i_cap;
-        }
-        pos_x=0.0f;
-        for(int i=0;i<15;i++)
-        {
-            DrawTexturePro(ground,(Rectangle){0.0f,0.0f,ground.width,ground.height},(Rectangle){pos_x,13*j_cap,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
-            pos_x+=i_cap;
+            for(int i=0;i<car_idx;i++)
+            {
+                DrawTexturePro(car_pic[cars[i].pic_num],(Rectangle){0.0f,0.0f,car_pic[cars[i].pic_num].width,car_pic[cars[i].pic_num].height},(Rectangle){cars[i].position_x,cars[i].position_y,cars[i].width,j_cap},Vector2Zero(),0.0f,WHITE);
+            }
+            for(int i=0;i<log_idx;i++)
+            {
+                DrawTexturePro(log_pic[logs[i].pic_num],(Rectangle){0.0f,0.0f,log_pic[logs[i].pic_num].width,log_pic[logs[i].pic_num].height},(Rectangle){logs[i].position_x,logs[i].position_y,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
+            }
+            for(int i=0;i<tur_idx;i++)
+            {
+            DrawTexturePro(turtle_pic,(Rectangle){0.0f,0.0f,turtle_pic.width,turtle_pic.height},(Rectangle){turtles[i].position_x,turtles[i].position_y,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
+            }
+            pos_x=0.0f;
+            for(int i=0;i<15;i++)
+            {
+                DrawTexturePro(ground,(Rectangle){0.0f,0.0f,ground.width,ground.height},(Rectangle){pos_x,7*j_cap,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
+                pos_x+=i_cap;
+            }
+            pos_x=0.0f;
+            for(int i=0;i<15;i++)
+            {
+                DrawTexturePro(ground,(Rectangle){0.0f,0.0f,ground.width,ground.height},(Rectangle){pos_x,13*j_cap,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
+                pos_x+=i_cap;
+            }
+            pos_x=0.0f;
+            for(int i=0;i<15;i++)
+            {
+                DrawTexturePro(upper_grass,(Rectangle){0.0f,0.0f,upper_grass.width,upper_grass.height},(Rectangle){pos_x,0.0f,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
+                pos_x+=i_cap;
+            }
         }
         if(state == PLAYING)
         DrawTexturePro(frog[0],(Rectangle){0.0f,0.0f,frog[0].width,frog[0].height},(Rectangle){frog_pos.x+i_cap/2.0f,frog_pos.y+j_cap/2.0f,i_cap,j_cap},(Vector2){i_cap/2.0f,j_cap/2.0f},frog_rot,WHITE);
 
+        if(state==DYING)
+        {
+            int frame=death_frame<7?death_frame:6;
+            DrawTexturePro(death_pic[frame], (Rectangle){0.0f, 0.0f,death_pic[frame].width, death_pic[frame].height},
+                            (Rectangle){frog_pos.x+i_cap/2.0f,frog_pos.y+j_cap/2.0f,i_cap,j_cap},(Vector2){i_cap/2.0f,j_cap/2.0f},frog_rot,WHITE);
+        }
 
         if(state == GAME_OVER && live<=0) 
         {
             DrawRectangle(0, 4*j_cap, WIDTH, 5*j_cap, BLACK);
             DrawText(TextFormat("GAME OVER"), 2*i_cap, 5*j_cap, 2*j_cap, RED);
             DrawText(TextFormat("SCORE: %d", score), 2*i_cap, 8*j_cap, j_cap, RED);
+            DrawRectangleRec(restart_btn, LIGHTGRAY);
+            DrawText("RESTART", restart_btn.x+20, restart_btn.y+15, 25, BLACK);
+
         }
 
         if(state == GAME_OVER && live>0)
@@ -459,13 +544,26 @@ int main(void)
             DrawText(TextFormat("LIVE: %d",live), 6*i_cap, 14*j_cap, 20, LIGHTGRAY);
         }
 
-        pos_x=0.0f;
-        for(int i=0;i<15;i++)
-        {
-            DrawTexturePro(upper_grass,(Rectangle){0.0f,0.0f,upper_grass.width,upper_grass.height},(Rectangle){pos_x,0.0f,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
-            pos_x+=i_cap;
-        }
 
+        if(state==MENU)
+        {
+            ClearBackground(BLACK);
+            DrawText("FROGGER", WIDTH/2-MeasureText("FROGGER",80)/2, HEIGHT/4, 80, YELLOW);
+            DrawRectangleRec(start_btn, LIGHTGRAY);
+            DrawText("START", start_btn.x+40, start_btn.y+15, 30, BLACK);
+
+            DrawRectangleRec(credit_btn, LIGHTGRAY);
+            DrawText("CREDITS", credit_btn.x+20, credit_btn.y+15, 30, BLACK);
+        
+        }
+        if(state==CREDIT)
+        {
+            DrawText("CREDITS", WIDTH/2 - MeasureText("CREDITS",60)/2, HEIGHT/4, 60, YELLOW);
+            DrawText("EMON ISLAM", WIDTH/2-120, HEIGHT/2-40, 20, WHITE);
+            DrawRectangleRec(back_btn, LIGHTGRAY);
+            DrawText("BACK", back_btn.x+60, back_btn.y+15, 30, BLACK);
+        }
+        
         EndDrawing();
 
     }
