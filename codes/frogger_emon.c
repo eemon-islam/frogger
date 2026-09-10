@@ -121,8 +121,7 @@ int main(void)
         cars[car_idx].position_x=(4+4*i)*i_cap;
         cars[car_idx].position_y=10*j_cap; 
         cars[car_idx].width=i_cap;     
-    car_idx++;
-
+        car_idx++;
     }
     for(int i=0;i<3;i++)
     {
@@ -171,7 +170,6 @@ int main(void)
             logs[log_idx].pic_num=0;
             else if(j==3)
             logs[log_idx].pic_num=2;
-
             else
             logs[log_idx].pic_num=1;
 
@@ -224,10 +222,10 @@ int main(void)
     float max_time=30.0f;
     float pos_x=0.0f;
 
-    Rectangle start_btn = {WIDTH/2-100, HEIGHT/2, 200, 60};
-    Rectangle credit_btn = {WIDTH/2-100, HEIGHT/2+80, 200, 60};
-    Rectangle back_btn = {WIDTH/2-100, HEIGHT/2, 200-150, 60};
-    Rectangle restart_btn = {WIDTH/2-100, 10*j_cap, 200, 60};
+    Rectangle start_btn = {WIDTH/2-100, HEIGHT/2-30, 200, 60};
+    Rectangle credit_btn = {WIDTH/2-100, HEIGHT/2+50, 200, 60};
+    Rectangle back_btn = {WIDTH/2-100, HEIGHT/2+150, 200, 60};
+    Rectangle restart_btn = {WIDTH/2-100, HEIGHT/2+150, 200, 60};
     
     int live=3;
     int score=0;
@@ -258,15 +256,15 @@ int main(void)
                     cars[i].position_x=-cars[i].width;
 
                     else if (cars[i].speed < 0 && cars[i].position_x+cars[i].width < 0)
-                    cars[i].position_x = WIDTH+cars[i].width;   
-
+                    cars[i].position_x = WIDTH+cars[i].width;
                 }
 
                 for (int i= 0; i < tur_idx; i++) 
                 {
                     turtles[i].position_x+=turtles[i].speed*dt;
 
-                    if (  turtles[i].position_x+i_cap < 0) {
+                    if (turtles[i].position_x+i_cap<0) 
+                    {
                         turtles[i].position_x = WIDTH+i_cap;   
                     }
                 }     
@@ -274,7 +272,8 @@ int main(void)
                 {
                     logs[i].position_x+=logs[i].speed*dt;
 
-                    if (logs[i].position_x > WIDTH) {
+                    if(logs[i].position_x>WIDTH) 
+                    {
                         logs[i].position_x -= (WIDTH+i_cap);   
                     }
                 }                 
@@ -347,7 +346,7 @@ int main(void)
                 }
             }
 
-            bool inriver=(frog_pos.y > river.y-j_cap && frog_pos.y < river.y + j_cap*4);
+            bool inriver=(frog_pos.y > river.y-j_cap && frog_pos.y < river.y+j_cap*4);
             bool onplatform=false;
             if(inriver)
             {
@@ -377,10 +376,8 @@ int main(void)
                         state=DYING;
                         death_timer=0;
                         death_frame=0;
-                    }
-                    
+                    } 
                 }
-
 
                 if(!onplatform)
                 {
@@ -518,24 +515,26 @@ int main(void)
         {
             int frame=death_frame<7?death_frame:6;
             DrawTexturePro(death_pic[frame], (Rectangle){0.0f, 0.0f,death_pic[frame].width, death_pic[frame].height},
-                            (Rectangle){frog_pos.x+i_cap/2.0f,frog_pos.y+j_cap/2.0f,i_cap,j_cap},(Vector2){i_cap/2.0f,j_cap/2.0f},frog_rot,WHITE);
+                            (Rectangle){frog_pos.x+i_cap/2.0f,frog_pos.y+j_cap/2.0f,i_cap,j_cap},(Vector2){i_cap/2.0f,j_cap/2.0f},frog_rot,YELLOW);
         }
 
-        if(state == GAME_OVER && live<=0) 
+        if(state==GAME_OVER && live<=0)
         {
             DrawRectangle(0, 4*j_cap, WIDTH, 5*j_cap, BLACK);
-            DrawText(TextFormat("GAME OVER"), 2*i_cap, 5*j_cap, 2*j_cap, RED);
-            DrawText(TextFormat("SCORE: %d", score), 2*i_cap, 8*j_cap, j_cap, RED);
+            DrawText(TextFormat("GAME OVER"), 2*i_cap, 5*j_cap, 2*j_cap, YELLOW);
+            DrawText(TextFormat("SCORE: %d", score), 2*i_cap, 8*j_cap, j_cap, YELLOW);
             DrawRectangleRec(restart_btn, LIGHTGRAY);
-            DrawText("RESTART", restart_btn.x+20, restart_btn.y+15, 25, BLACK);
+            DrawText("RESTART", restart_btn.x+20, restart_btn.y+15, 30, BLACK);
 
         }
 
         if(state == GAME_OVER && live>0)
         {
             DrawRectangle(0, 4*j_cap, WIDTH, 5*j_cap, BLACK);
-            DrawText(TextFormat("SUCCESS!"), 2*i_cap, 5*j_cap, 2*j_cap, RED);
-            DrawText(TextFormat("SCORE: %d", score), 2*i_cap, 8*j_cap, j_cap, RED);
+            DrawText(TextFormat("SUCCESS!"), 2*i_cap, 5*j_cap, 2*j_cap, YELLOW);
+            DrawText(TextFormat("SCORE: %d", score), 2*i_cap, 8*j_cap, j_cap, YELLOW);
+            DrawRectangleRec(restart_btn, LIGHTGRAY);
+            DrawText("RESTART", restart_btn.x+20, restart_btn.y+15, 30, BLACK);
         }
         if(state == PLAYING)
         {
@@ -554,18 +553,17 @@ int main(void)
 
             DrawRectangleRec(credit_btn, LIGHTGRAY);
             DrawText("CREDITS", credit_btn.x+20, credit_btn.y+15, 30, BLACK);
-        
         }
         if(state==CREDIT)
         {
             DrawText("CREDITS", WIDTH/2 - MeasureText("CREDITS",60)/2, HEIGHT/4, 60, YELLOW);
-            DrawText("EMON ISLAM", WIDTH/2-120, HEIGHT/2-40, 20, WHITE);
+            DrawText("EMON ISLAM - 2505020", WIDTH/2-120, HEIGHT/2-40, 30, WHITE);
+            DrawText("IBTASAM HAIDER RIDDHO - 2505009", WIDTH/2-190, HEIGHT/2, 30, WHITE);
             DrawRectangleRec(back_btn, LIGHTGRAY);
             DrawText("BACK", back_btn.x+60, back_btn.y+15, 30, BLACK);
         }
         
         EndDrawing();
-
     }
 
     for(int i=0;i<5;i++)
@@ -575,6 +573,10 @@ int main(void)
     for(int i=0;i<3;i++)
     {
         UnloadTexture(log_pic[i]);
+    }
+    for(int i=0;i<6;i++)
+    {
+        UnloadTexture(death_pic[i]);
     }
     UnloadTexture(frog[0]);
     UnloadTexture(frog[1]);
