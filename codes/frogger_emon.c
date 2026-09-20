@@ -232,6 +232,9 @@ int main(void)
     bool visited[11]={false};
     int y_level=-1;
 
+    bool filled[7]={false};
+    int filled_count=0;
+
     while(!WindowShouldClose())
     {
         float dt=GetFrameTime();
@@ -391,11 +394,27 @@ int main(void)
             }
             for(int i=1; i<=14; i+=2)
             {
-                if(CheckCollisionRecs((Rectangle){frog_pos.x,frog_pos.y,i_cap*.7,j_cap*.7}, (Rectangle){i*i_cap, j_cap, .3*i_cap, .1*j_cap}))
+                int slot = (i-1)/2;
+                if( !filled[slot] && CheckCollisionRecs((Rectangle){frog_pos.x,frog_pos.y,i_cap*.7,j_cap*.7},
+                                    (Rectangle){i*i_cap, j_cap, .3*i_cap, .1*j_cap}))
                 {
-                    delay_time+=dt;
-                    if(delay_time>=.2)
-                    state=GAME_OVER;
+                    filled[slot]=true;
+                    filled_count++;
+                    score+=50;
+                    if(filled_count>=7)
+                    {
+                        state=GAME_OVER;
+                    }
+                    //delay_time+=dt;
+                    //if(delay_time>=.2)
+                    else
+                    {
+                        frog_pos.x =7*i_cap;
+                        frog_pos.y =13*j_cap;
+                        frog_rot = 0.0;
+                        y_level=-1;
+                        for(int k=0; k<11; k++) visited[k]=false;
+                    } 
                 }
             }
         }
@@ -435,6 +454,9 @@ int main(void)
                     death_frame=0;
                     for(int k=0; k<11; k++)
                     visited[k]=false;
+                    for(int k=0; k<7; k++)
+                    filled[k]=false;
+                    filled_count=0;
                     state=PLAYING;
                 }
                 if(CheckCollisionPointRec(mouse,credit_btn))
@@ -445,6 +467,9 @@ int main(void)
         }
         if(state==GAME_OVER)
         {
+            for(int k=0; k<7; k++)
+            filled[k]=false;
+            filled_count=0;
             Vector2 mouse=GetMousePosition();
             if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mouse, restart_btn))
             {
@@ -508,6 +533,21 @@ int main(void)
                 pos_x+=i_cap;
             }
         }
+
+
+        for(int i=1; i<=13; i+=2)
+        {
+            int slot = (i-1)/2;
+            if(filled[slot])
+            {
+                DrawTexturePro(frog[0],
+                    (Rectangle){0.0f, 0.0f, frog[0].width, frog[0].height},
+                    (Rectangle){i*i_cap + i_cap/2.0f, j_cap + j_cap/2.0f, i_cap*0.8f, j_cap*0.8f},
+                    (Vector2){i_cap*0.35f, j_cap*0.35f}, 0.0f, WHITE);
+            }
+        }
+
+
         if(state == PLAYING)
         DrawTexturePro(frog[0],(Rectangle){0.0f,0.0f,frog[0].width,frog[0].height},(Rectangle){frog_pos.x+i_cap/2.0f,frog_pos.y+j_cap/2.0f,i_cap,j_cap},(Vector2){i_cap/2.0f,j_cap/2.0f},frog_rot,WHITE);
 
@@ -525,10 +565,9 @@ int main(void)
             DrawText(TextFormat("SCORE: %d", score), 2*i_cap, 8*j_cap, j_cap, YELLOW);
             DrawRectangleRec(restart_btn, LIGHTGRAY);
             DrawText("RESTART", restart_btn.x+20, restart_btn.y+15, 30, BLACK);
-
         }
 
-        if(state == GAME_OVER && live>0)
+        if(state== GAME_OVER && live>0)
         {
             DrawRectangle(0, 4*j_cap, WIDTH, 5*j_cap, BLACK);
             DrawText(TextFormat("SUCCESS!"), 2*i_cap, 5*j_cap, 2*j_cap, YELLOW);
@@ -536,13 +575,12 @@ int main(void)
             DrawRectangleRec(restart_btn, LIGHTGRAY);
             DrawText("RESTART", restart_btn.x+20, restart_btn.y+15, 30, BLACK);
         }
-        if(state == PLAYING)
+        if(state==PLAYING)
         {
-            DrawText(TextFormat("SCORE: %d", score), 13*i_cap, 14*j_cap, 20, LIGHTGRAY);
-            DrawText(TextFormat("TIME %.2f",max_time- time), 10*i_cap, 14*j_cap, 20, LIGHTGRAY);
-            DrawText(TextFormat("LIVE: %d",live), 6*i_cap, 14*j_cap, 20, LIGHTGRAY);
+            DrawText(TextFormat("SCORE: %d", score), 13*i_cap, 14*j_cap, 25, LIGHTGRAY);
+            DrawText(TextFormat("TIME %.2f",max_time- time), 10*i_cap, 14*j_cap, 25, LIGHTGRAY);
+            DrawText(TextFormat("LIVE: %d",live), 6*i_cap, 14*j_cap, 25, LIGHTGRAY);
         }
-
 
         if(state==MENU)
         {
