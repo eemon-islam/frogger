@@ -4,10 +4,12 @@
 
 #define HEIGHT 1000
 #define WIDTH 1200
+#define NUM_HOMES 7
 
 typedef struct car
 {
     float speed;
+    float base_speed;
     float position_x;
     float position_y;
     float width;
@@ -17,6 +19,7 @@ typedef struct car
 typedef struct  turtle
 {
     float speed;
+    float base_speed;
     float position_x;
     float position_y;
     int pic_num;
@@ -25,6 +28,7 @@ typedef struct  turtle
 typedef struct  logg
 {
     float speed;
+    float base_speed;
     float position_x;
     float position_y;
     float width;
@@ -33,6 +37,23 @@ typedef struct  logg
 
 typedef enum {MENU, PLAYING, DYING, GAME_OVER, CREDIT}GameState;
 GameState state=MENU;
+float levelSpeedMultiplier(int level)
+{
+    return 1.0f + (level - 1) * 0.2f;
+}
+void applyLevelSpeeds(car cars[], int car_count,
+                       turtle turtles[], int tur_count,
+                       logg logs[], int log_count,
+                       int level)
+{
+    float mult = levelSpeedMultiplier(level);
+    for(int i=0; i<car_count; i++)
+        cars[i].speed = cars[i].base_speed * mult;
+    for(int i=0; i<tur_count; i++)
+        turtles[i].speed = turtles[i].base_speed * mult;
+    for(int i=0; i<log_count; i++)
+        logs[i].speed = logs[i].base_speed * mult;
+}
 
 int main(void)
 {   float i_cap=WIDTH/15.0f;
@@ -99,6 +120,7 @@ int main(void)
     {
         cars[car_idx].pic_num=4;
         cars[car_idx].speed=-100.0f;
+        cars[car_idx].base_speed=-100.0f;
         cars[car_idx].position_x=(8+5*i)*i_cap;
         cars[car_idx].position_y=8*j_cap;
         cars[car_idx].width=2*i_cap;
@@ -109,6 +131,7 @@ int main(void)
     {
         cars[car_idx].pic_num=2;
         cars[car_idx].speed=+120.0f;
+        cars[car_idx].base_speed=+120.0f;
         cars[car_idx].position_x=(1+5*i)*i_cap;
         cars[car_idx].position_y=9*j_cap;   
         cars[car_idx].width=i_cap;      
@@ -118,6 +141,7 @@ int main(void)
     {
         cars[car_idx].pic_num=1;
         cars[car_idx].speed=-200.0f;
+        cars[car_idx].base_speed=-200.0f;
         cars[car_idx].position_x=(4+4*i)*i_cap;
         cars[car_idx].position_y=10*j_cap; 
         cars[car_idx].width=i_cap;     
@@ -126,7 +150,8 @@ int main(void)
     for(int i=0;i<3;i++)
     {
         cars[car_idx].pic_num=3;
-        cars[car_idx].speed=+150.0f;        
+        cars[car_idx].speed=+150.0f;   
+        cars[car_idx].base_speed=+150.0f;     
         cars[car_idx].position_x=(6+4*i)*i_cap;
         cars[car_idx].position_y=11*j_cap;
         cars[car_idx].width=i_cap;  
@@ -136,6 +161,7 @@ int main(void)
     {
         cars[car_idx].pic_num=0;
         cars[car_idx].speed=-130.0f;
+        cars[car_idx].base_speed=-130.0f;
         cars[car_idx].position_x=(2+4*i)*i_cap;
         cars[car_idx].position_y=12*j_cap;  
         cars[car_idx].width=i_cap;        
@@ -146,6 +172,7 @@ int main(void)
         for(int i=0;i<4;i++)
         {
             turtles[tur_idx].speed=-120.0f;
+            turtles[tur_idx].base_speed=-120.0f;
             turtles[tur_idx].position_x=3+(4*i+j)*i_cap;
             turtles[tur_idx].position_y=3*j_cap;
             tur_idx++;
@@ -156,6 +183,7 @@ int main(void)
         for(int i=0;i<4;i++)
         {
             turtles[tur_idx].speed=-120.0f;
+            turtles[tur_idx].base_speed=-120.0f;
             turtles[tur_idx].position_x=(6*i+j)*i_cap;
             turtles[tur_idx].position_y=6*j_cap;
             tur_idx++;
@@ -166,6 +194,7 @@ int main(void)
         for(int j=0;j<4;j++)
         {
             logs[log_idx].speed=100.0f;
+            logs[log_idx].base_speed=100.0f;
             if(j==0)
             logs[log_idx].pic_num=0;
             else if(j==3)
@@ -183,6 +212,7 @@ int main(void)
         for(int j=0;j<5;j++)
         {
             logs[log_idx].speed=120.0f;
+            logs[log_idx].base_speed=120.0f;
             if(j==0)
             {logs[log_idx].pic_num=0;}
             else if(j==4)
@@ -202,6 +232,7 @@ int main(void)
         for(int j=0;j<4;j++)
         {
             logs[log_idx].speed=120.0f;
+            logs[log_idx].base_speed=120.0f;
             if(j==0)
             {logs[log_idx].pic_num=0;}
             else if(j==3)
@@ -226,14 +257,17 @@ int main(void)
     Rectangle credit_btn = {WIDTH/2-100, HEIGHT/2+50, 200, 60};
     Rectangle back_btn = {WIDTH/2-100, HEIGHT/2+150, 200, 60};
     Rectangle restart_btn = {WIDTH/2-100, HEIGHT/2+150, 200, 60};
-    
+    Rectangle next_level_btn = {WIDTH/2-100, HEIGHT/2+150, 200, 60};
+    Rectangle menu_btn= {WIDTH/2-100, HEIGHT/2+230, 200, 60};
+
     int live=3;
     int score=0;
     bool visited[11]={false};
     int y_level=-1;
 
-    bool filled[7]={false};
+    bool filled[NUM_HOMES]={false};
     int filled_count=0;
+    int level=1;
 
     while(!WindowShouldClose())
     {
@@ -290,7 +324,7 @@ int main(void)
                     if( !visited[y_level] && y_level<11 && y_level>=0)
                     {
                         visited[y_level]=true;
-                        score+=10;
+                        score+=10*level;
                     }
                 }
                 if (IsKeyPressed(KEY_DOWN)) 
@@ -400,8 +434,8 @@ int main(void)
                 {
                     filled[slot]=true;
                     filled_count++;
-                    score+=50;
-                    if(filled_count>=7)
+                    score+=50+(level-1)*20;
+                    if(filled_count>=NUM_HOMES)
                     {
                         state=GAME_OVER;
                     }
@@ -452,9 +486,11 @@ int main(void)
                     delay_time=0;
                     death_timer=0;
                     death_frame=0;
+                    level=1;
+                    applyLevelSpeeds(cars, car_idx, turtles, tur_idx, logs, log_idx, level);
                     for(int k=0; k<11; k++)
                     visited[k]=false;
-                    for(int k=0; k<7; k++)
+                    for(int k=0; k<NUM_HOMES; k++)
                     filled[k]=false;
                     filled_count=0;
                     state=PLAYING;
@@ -467,24 +503,66 @@ int main(void)
         }
         if(state==GAME_OVER)
         {
+            bool success = (live>0);
             for(int k=0; k<7; k++)
             filled[k]=false;
             filled_count=0;
             Vector2 mouse=GetMousePosition();
             if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mouse, restart_btn))
             {
-                frog_pos=(Vector2){7*i_cap, 13*j_cap};
-                time =0;
-                score=0;
-                frog_rot=0;
-                live=3;
-                y_level=-1;
-                delay_time=0;
-                death_timer=0;
-                death_frame=0;
-                for(int k=0; k<11; k++)
-                visited[k]=false;
-                state=MENU;
+                if(success && CheckCollisionPointRec(mouse, next_level_btn))
+                {
+                    level++;
+                    applyLevelSpeeds(cars, car_idx, turtles, tur_idx, logs, log_idx, level);
+                    frog_pos=(Vector2){7*i_cap, 13*j_cap};
+                    time=0;
+                    frog_rot=0;
+                    y_level=-1;
+                    delay_time=0;
+                    death_timer=0;
+                    death_frame=0;
+                    for(int k=0; k<11; k++) visited[k]=false;
+                    for(int k=0; k<NUM_HOMES; k++) filled[k]=false;
+                    filled_count=0;
+                    state=PLAYING;
+
+                }
+                else if(success && CheckCollisionPointRec(mouse, menu_btn))
+                {
+                    level=1;
+                    applyLevelSpeeds(cars, car_idx, turtles, tur_idx, logs, log_idx, level);
+                    frog_pos=(Vector2){7*i_cap, 13*j_cap};
+                    time=0;
+                    score=0;
+                    frog_rot=0;
+                    live=3;
+                    y_level=-1;
+                    delay_time=0;
+                    death_timer=0;
+                    death_frame=0;
+                    for(int k=0; k<11; k++) visited[k]=false;
+                    for(int k=0; k<NUM_HOMES; k++) filled[k]=false;
+                    filled_count=0;
+                    state=MENU;
+                }
+                else if(!success && CheckCollisionPointRec(mouse, restart_btn))
+                {
+                    level=1;
+                    applyLevelSpeeds(cars, car_idx, turtles, tur_idx, logs, log_idx, level);
+                    frog_pos=(Vector2){7*i_cap, 13*j_cap};
+                    time =0;
+                    score=0;
+                    frog_rot=0;
+                    live=3;
+                    y_level=-1;
+                    delay_time=0;
+                    death_timer=0;
+                    death_frame=0;
+                    for(int k=0; k<11; k++) visited[k]=false;
+                    for(int k=0; k<NUM_HOMES; k++) filled[k]=false;
+                    filled_count=0;
+                    state=MENU;
+                }
             }
         }
 
@@ -562,7 +640,7 @@ int main(void)
         {
             DrawRectangle(0, 4*j_cap, WIDTH, 5*j_cap, BLACK);
             DrawText(TextFormat("GAME OVER"), 2*i_cap, 5*j_cap, 2*j_cap, YELLOW);
-            DrawText(TextFormat("SCORE: %d", score), 2*i_cap, 8*j_cap, j_cap, YELLOW);
+            DrawText(TextFormat("SCORE: %d   LEVEL: %d", score, level), 2*i_cap, 8*j_cap, j_cap, YELLOW);
             DrawRectangleRec(restart_btn, LIGHTGRAY);
             DrawText("RESTART", restart_btn.x+20, restart_btn.y+15, 30, BLACK);
         }
@@ -570,16 +648,20 @@ int main(void)
         if(state== GAME_OVER && live>0)
         {
             DrawRectangle(0, 4*j_cap, WIDTH, 5*j_cap, BLACK);
-            DrawText(TextFormat("SUCCESS!"), 2*i_cap, 5*j_cap, 2*j_cap, YELLOW);
+            DrawText(TextFormat("LEVEL %d COMPLETE!", level), 2*i_cap, 5*j_cap, (int)(1.3f*j_cap), YELLOW);
             DrawText(TextFormat("SCORE: %d", score), 2*i_cap, 8*j_cap, j_cap, YELLOW);
-            DrawRectangleRec(restart_btn, LIGHTGRAY);
-            DrawText("RESTART", restart_btn.x+20, restart_btn.y+15, 30, BLACK);
+            DrawRectangleRec(next_level_btn, LIGHTGRAY);
+            DrawText("NEXT LEVEL", next_level_btn.x+15, next_level_btn.y+15, 26, BLACK);
+
+            DrawRectangleRec(menu_btn, LIGHTGRAY);
+            DrawText("BACK TO MENU", menu_btn.x+8, menu_btn.y+15, 26, BLACK);
         }
         if(state==PLAYING)
         {
             DrawText(TextFormat("SCORE: %d", score), 13*i_cap, 14*j_cap, 25, LIGHTGRAY);
             DrawText(TextFormat("TIME %.2f",max_time- time), 10*i_cap, 14*j_cap, 25, LIGHTGRAY);
             DrawText(TextFormat("LIVE: %d",live), 6*i_cap, 14*j_cap, 25, LIGHTGRAY);
+            DrawText(TextFormat("LEVEL: %d", level), 1*i_cap, 14*j_cap, 25, LIGHTGRAY);
         }
 
         if(state==MENU)
