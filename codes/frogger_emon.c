@@ -1,10 +1,15 @@
 #include "raylib.h"
 #include "raymath.h"
 #include<stdbool.h>
+#include<stdio.h>
+#include<string.h>
 
 #define HEIGHT 1000
 #define WIDTH 1200
 #define NUM_HOMES 7
+#define MAX_HIGHSCORES 10
+#define MAX_NAME_LEN 16
+#define HIGHSCORE_FILE "highscores.txt"
 
 typedef struct car
 {
@@ -35,16 +40,18 @@ typedef struct  logg
     int pic_num;
 }logg;
 
-typedef enum {MENU, PLAYING, DYING, GAME_OVER, CREDIT}GameState;
+typedef struct highscore
+{
+    char name[MAX_NAME_LEN];
+    int score;
+}HighScore;
+typedef enum {MENU, PLAYING, DYING, GAME_OVER, CREDIT, ENTER_NAME, LEADERBOARD, HELP}GameState;
 GameState state=MENU;
 float levelSpeedMultiplier(int level)
 {
     return 1.0f + (level - 1) * 0.2f;
 }
-void applyLevelSpeeds(car cars[], int car_count,
-                       turtle turtles[], int tur_count,
-                       logg logs[], int log_count,
-                       int level)
+void applyLevelSpeeds(car cars[], int car_count, turtle turtles[], int tur_count, logg logs[], int log_count, int level)
 {
     float mult = levelSpeedMultiplier(level);
     for(int i=0; i<car_count; i++)
@@ -53,6 +60,59 @@ void applyLevelSpeeds(car cars[], int car_count,
         turtles[i].speed = turtles[i].base_speed * mult;
     for(int i=0; i<log_count; i++)
         logs[i].speed = logs[i].base_speed * mult;
+}
+
+void loadHighScores(HighScore arr[], int *count)
+{
+    *count = 0;
+    FILE *f = fopen(HIGHSCORE_FILE, "r");
+    if(!f) return;
+
+    char name[MAX_NAME_LEN];
+    int score;
+    while(*count < MAX_HIGHSCORES && fscanf(f, "%15[^,],%d\n", name, &score) == 2)
+    {
+        strncpy(arr[*count].name, name, MAX_NAME_LEN-1);
+        arr[*count].name[MAX_NAME_LEN-1] = '\0';
+        arr[*count].score = score;
+        (*count)++;
+    }
+    fclose(f);
+}
+
+void saveHighScores(HighScore arr[], int count)
+{
+    FILE *f = fopen(HIGHSCORE_FILE, "w");
+    if(!f) return;
+
+    for(int i=0; i<count; i++)
+        fprintf(f, "%s,%d\n", arr[i].name, arr[i].score);
+    fclose(f);
+}
+
+void addHighScore(HighScore arr[], int *count, const char *name, int score)
+{
+    int insert_pos = *count;
+    for(int i=0; i<*count; i++)
+    {
+        if(score > arr[i].score)
+        {
+            insert_pos = i;
+            break;
+        }
+    }
+    if(insert_pos < MAX_HIGHSCORES)
+    {
+        int last = (*count < MAX_HIGHSCORES) ? *count : MAX_HIGHSCORES-1;
+        for(int i=last; i>insert_pos; i--)
+        {
+            arr[i] = arr[i-1];
+        }
+        strncpy(arr[insert_pos].name, name, MAX_NAME_LEN-1);
+        arr[insert_pos].name[MAX_NAME_LEN-1] = '\0';
+        arr[insert_pos].score = score;
+        if(*count < MAX_HIGHSCORES) (*count)++;
+    }
 }
 
 int main(void)
@@ -116,8 +176,6 @@ int main(void)
     car cars[14];
     turtle turtles[20];
     logg logs[34];
-
-
 
     int car_idx=0;
     int tur_idx=0;
@@ -262,10 +320,13 @@ int main(void)
 
     Rectangle start_btn = {WIDTH/2-100, HEIGHT/2-30, 200, 60};
     Rectangle credit_btn = {WIDTH/2-100, HEIGHT/2+50, 200, 60};
-    Rectangle back_btn = {WIDTH/2-100, HEIGHT/2+150, 200, 60};
+    Rectangle leaderboard_btn = {WIDTH/2-100, HEIGHT/2+130, 200, 60}; 
+    Rectangle help_btn = {WIDTH/2-100, HEIGHT/2+210, 200, 60};
+    Rectangle back_btn = {WIDTH-300, HEIGHT-200, 200, 60};
     Rectangle restart_btn = {WIDTH/2-100, HEIGHT/2+150, 200, 60};
     Rectangle next_level_btn = {WIDTH/2-100, HEIGHT/2+150, 200, 60};
     Rectangle menu_btn= {WIDTH/2-100, HEIGHT/2+230, 200, 60};
+    Rectangle submit_btn = {WIDTH/2-100, HEIGHT/2+100, 200, 60};
     Rectangle mute_btn = {WIDTH - 70.0f, 20.0f, 50.0f, 50.0f};
     bool muted = false;
 
@@ -277,6 +338,13 @@ int main(void)
     bool filled[NUM_HOMES]={false};
     int filled_count=0;
     int level=1;
+
+    HighScore highscores[MAX_HIGHSCORES];
+    int highscore_count=0;
+    loadHighScores(highscores, &highscore_count);
+
+    char name_buffer[MAX_NAME_LEN] = "";
+    int name_len = 0;
     
     PlayMusicStream(openSong);
 
@@ -299,6 +367,54 @@ int main(void)
             {
                 PlaySound(click_sound);
                 state = MENU;
+            }
+        }
+        if(state==LEADERBOARD)
+        {
+            Vector2 mouse = GetMousePosition();
+            if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mouse, back_btn))
+            {
+                PlaySound(click_sound);
+                state = MENU;
+            }
+        }
+        if(state==HELP)
+        {
+            Vector2 mouse = GetMousePosition();
+            if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mouse, back_btn))
+            {
+                PlaySound(click_sound);
+                state = MENU;
+            }
+        }
+        if(state==ENTER_NAME)
+        {
+            int key = GetCharPressed();
+            while(key > 0)
+            {
+                if(key>=32 && key<=125 && key!=',' && name_len < MAX_NAME_LEN-1)
+                {
+                    name_buffer[name_len] = (char)key;
+                    name_len++;
+                    name_buffer[name_len] = '\0';
+                }
+                key = GetCharPressed();
+            }
+            if(IsKeyPressed(KEY_BACKSPACE) && name_len>0)
+            {
+                name_len--;
+                name_buffer[name_len]='\0';
+            }
+
+            Vector2 mouse = GetMousePosition();
+            bool submit_clicked = IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mouse, submit_btn);
+            if(IsKeyPressed(KEY_ENTER) || submit_clicked)
+            {
+                PlaySound(click_sound);
+                const char *final_name = (name_len>0) ? name_buffer : "PLAYER";
+                addHighScore(highscores, &highscore_count, final_name, score);
+                saveHighScores(highscores, highscore_count);
+                state = GAME_OVER;
             }
         }
         if(state == PLAYING)
@@ -383,12 +499,14 @@ int main(void)
             }
             else
             {
-                frog_pos.x = 8 * i_cap; 
-                frog_pos.y = 13 * j_cap;
-                time=0.0f;
-                for(int k = 0; k < 11; k++)
-                visited[k] = false;
 
+                if(state==PLAYING)
+                {
+                    state=DYING;
+                    death_timer=0;
+                    death_frame=0;
+                    PlaySound(killed_sound);
+                }
             }
             for(int i=0; i<car_idx; i++)
             {
@@ -458,6 +576,7 @@ int main(void)
                     filled[slot]=true;
                     filled_count++;
                     score+=50+(level-1)*20;
+                    time=0.0f;
                     if(filled_count>=NUM_HOMES)
                     {
                         state=GAME_OVER;
@@ -486,13 +605,16 @@ int main(void)
                 live--;
                 if (live<=0) 
                 {
-                state = GAME_OVER;
-                PlaySound(endgame_sound);
+                    state = ENTER_NAME;
+                    name_len = 0;
+                    name_buffer[0] = '\0';
+                    PlaySound(endgame_sound);
                 }
                 else 
                 {
                     frog_pos.x =8*i_cap;
                     frog_pos.y=13*j_cap;
+                    time=0.0f;
                     state=PLAYING;
                 }
             } 
@@ -529,6 +651,15 @@ int main(void)
                 {
                     PlaySound(click_sound);
                     state = CREDIT;
+                }
+                if(CheckCollisionPointRec(mouse,leaderboard_btn))
+                {
+                    PlaySound(click_sound);
+                    state = LEADERBOARD;
+                }
+                if(CheckCollisionPointRec(mouse,help_btn))
+                {
+                    state=HELP;
                 }
             }
         }
@@ -709,6 +840,12 @@ int main(void)
 
             DrawRectangleRec(credit_btn, LIGHTGRAY);
             DrawText("CREDITS", credit_btn.x+20, credit_btn.y+15, 30, BLACK);
+
+            DrawRectangleRec(leaderboard_btn, LIGHTGRAY);
+            DrawText("LEADERBOARD", leaderboard_btn.x+8, leaderboard_btn.y+15, 22, BLACK);
+
+            DrawRectangleRec(help_btn, LIGHTGRAY);
+            DrawText("HOW TO PLAY", help_btn.x+8, help_btn.y+15, 25, BLACK);
         }
         if(state==CREDIT)
         {
@@ -717,6 +854,41 @@ int main(void)
             DrawText("IBTASAM HAIDER RIDDHO - 2505009", WIDTH/2-190, HEIGHT/2, 30, WHITE);
             DrawRectangleRec(back_btn, LIGHTGRAY);
             DrawText("BACK", back_btn.x+60, back_btn.y+15, 30, BLACK);
+        }
+        if(state==LEADERBOARD)
+        {
+            DrawText("LEADERBOARD", WIDTH/2 - MeasureText("LEADERBOARD",60)/2, HEIGHT/8, 60, YELLOW);
+            if(highscore_count==0)
+            {
+                DrawText("NO SCORES YET", WIDTH/2 - MeasureText("NO SCORES YET",30)/2, HEIGHT/3, 30, WHITE);
+            }
+            else
+            {
+                for(int i=0; i<highscore_count; i++)
+                {
+                    DrawText(TextFormat("%2d. %-15s %6d", i+1, highscores[i].name, highscores[i].score),
+                             WIDTH/2-230, HEIGHT/4 + i*45, 28, WHITE);
+                }
+            }
+            DrawRectangleRec(back_btn, LIGHTGRAY);
+            DrawText("BACK", back_btn.x+60, back_btn.y+15, 30, BLACK);
+        }
+        if(state==HELP)
+        {
+            DrawText("1. Avoid the cars and cross the road \n2. Cross the river, but don't fall into it\n3. Get the frog into the holes before time runs out.\n4. Use arrow keys to move.", 200, 200, 25, WHITE );
+            DrawRectangleRec(back_btn, LIGHTGRAY);
+            DrawText("BACK", back_btn.x+60, back_btn.y+15, 30, BLACK);
+        }
+        if(state==ENTER_NAME)
+        {
+            DrawText("GAME OVER!", WIDTH/2 - MeasureText("GAME OVER!",60)/2, HEIGHT/2-180, 60, YELLOW);
+            const char *score_text = TextFormat("YOUR SCORE: %d", score);
+            DrawText(score_text, WIDTH/2 - MeasureText(score_text,30)/2, HEIGHT/2-100, 30, WHITE);
+            DrawText("ENTER YOUR NAME:", WIDTH/2-150, HEIGHT/2-45, 25, WHITE);
+            DrawRectangle(WIDTH/2-150, HEIGHT/2-10, 300, 50, DARKGRAY);
+            DrawText(name_buffer, WIDTH/2-140, HEIGHT/2+2, 28, WHITE);
+            DrawRectangleRec(submit_btn, LIGHTGRAY);
+            DrawText("SUBMIT", submit_btn.x+55, submit_btn.y+15, 30, BLACK);
         }
         Texture2D current_icon = muted ? mute_icon : unmute_icon;
         DrawTexturePro(current_icon,(Rectangle){0.0f, 0.0f, (float)current_icon.width, (float)current_icon.height},
