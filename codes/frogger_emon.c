@@ -666,7 +666,7 @@ int main(void)
         if(state==GAME_OVER)
         {
             bool success = (live>0);
-            for(int k=0; k<7; k++)
+            for(int k=0; k<NUM_HOMES; k++) 
             filled[k]=false;
             filled_count=0;
             Vector2 mouse=GetMousePosition();
@@ -685,7 +685,7 @@ int main(void)
                     death_timer=0;
                     death_frame=0;
                     for(int k=0; k<11; k++) visited[k]=false;
-                    for(int k=0; k<NUM_HOMES; k++) filled[k]=false;
+                    //for(int k=0; k<NUM_HOMES; k++) filled[k]=false;
                     filled_count=0;
                     state=PLAYING;
 
@@ -705,7 +705,7 @@ int main(void)
                     death_timer=0;
                     death_frame=0;
                     for(int k=0; k<11; k++) visited[k]=false;
-                    for(int k=0; k<NUM_HOMES; k++) filled[k]=false;
+                    //for(int k=0; k<NUM_HOMES; k++) filled[k]=false;
                     filled_count=0;
                     ResumeMusicStream(openSong);
                     state=MENU;
@@ -725,12 +725,17 @@ int main(void)
                     death_timer=0;
                     death_frame=0;
                     for(int k=0; k<11; k++) visited[k]=false;
-                    for(int k=0; k<NUM_HOMES; k++) filled[k]=false;
+                    //for(int k=0; k<NUM_HOMES; k++) filled[k]=false;
                     filled_count=0;
                     ResumeMusicStream(openSong);
                     state=MENU;
                 }
             }
+        }
+        if(state==ENTER_NAME)
+        {
+            for(int i=0; i<NUM_HOMES; i++)
+            filled[i]=false;
         }
 
         BeginDrawing();
@@ -783,6 +788,7 @@ int main(void)
         for(int i=1; i<=13; i+=2)
         {
             int slot = (i-1)/2;
+            
             if(filled[slot])
             {
                 DrawTexturePro(frog[0],
