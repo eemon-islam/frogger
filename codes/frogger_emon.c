@@ -79,7 +79,14 @@ int main(void)
     InitAudioDevice();
 
     Sound jump= LoadSound("asset/music/proiettile.wav");
-
+    Music openSong        = LoadMusicStream("asset/music/openSong.wav"); 
+    Sound killed_sound    = LoadSound("asset/music/killed.wav"); 
+    Sound endgame_sound   = LoadSound("asset/music/endGame.wav"); 
+    Sound startgame_sound = LoadSound("asset/music/startingGame.wav");
+    Sound winner_sound    = LoadSound("asset/music/winner.wav"); 
+    Sound click_sound     = LoadSound("asset/music/sound.wav");
+    Texture2D mute_icon   = LoadTexture("asset/sound_off_icon.png");
+    Texture2D unmute_icon = LoadTexture("asset/sound_on_icon.png");
 
     car_pic[0] = LoadTexture("asset/car_1.png");
     car_pic[1] = LoadTexture("asset/car_2.png");
@@ -259,6 +266,8 @@ int main(void)
     Rectangle restart_btn = {WIDTH/2-100, HEIGHT/2+150, 200, 60};
     Rectangle next_level_btn = {WIDTH/2-100, HEIGHT/2+150, 200, 60};
     Rectangle menu_btn= {WIDTH/2-100, HEIGHT/2+230, 200, 60};
+    Rectangle mute_btn = {WIDTH - 70.0f, 20.0f, 50.0f, 50.0f};
+    bool muted = false;
 
     int live=3;
     int score=0;
@@ -268,16 +277,27 @@ int main(void)
     bool filled[NUM_HOMES]={false};
     int filled_count=0;
     int level=1;
+    
+    PlayMusicStream(openSong);
 
     while(!WindowShouldClose())
     {
         float dt=GetFrameTime();
+        UpdateMusicStream(openSong);
+        Vector2 mouse_pos = GetMousePosition();
+        if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mouse_pos, mute_btn))
+        {
+            muted = !muted;
+            SetMasterVolume(muted ? 0.0f : 1.0f);
+            PlaySound(click_sound);
+        }
 
         if(state==CREDIT)
         {
             Vector2 mouse = GetMousePosition();
             if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mouse, back_btn))
             {
+                PlaySound(click_sound);
                 state = MENU;
             }
         }
@@ -379,6 +399,7 @@ int main(void)
                         state=DYING;
                         death_timer=0;
                         death_frame=0;
+                        PlaySound(killed_sound);
                     }
                 }
             }
@@ -413,6 +434,7 @@ int main(void)
                         state=DYING;
                         death_timer=0;
                         death_frame=0;
+                        PlaySound(killed_sound);
                     } 
                 }
 
@@ -423,6 +445,7 @@ int main(void)
                         state=DYING;
                         death_timer=0;
                         death_frame=0;
+                        PlaySound(killed_sound);
                     }
                 }
             }
@@ -438,6 +461,7 @@ int main(void)
                     if(filled_count>=NUM_HOMES)
                     {
                         state=GAME_OVER;
+                        PlaySound(winner_sound);
                     }
                     //delay_time+=dt;
                     //if(delay_time>=.2)
@@ -461,7 +485,10 @@ int main(void)
             {
                 live--;
                 if (live<=0) 
+                {
                 state = GAME_OVER;
+                PlaySound(endgame_sound);
+                }
                 else 
                 {
                     frog_pos.x =8*i_cap;
@@ -477,6 +504,9 @@ int main(void)
             {
                 if(CheckCollisionPointRec(mouse, start_btn))
                 {
+                    PlaySound(click_sound);
+                    PlaySound(startgame_sound);
+                    PauseMusicStream(openSong);
                     frog_pos=(Vector2){7*i_cap, 13*j_cap};
                     time =0;
                     score=0;
@@ -497,6 +527,7 @@ int main(void)
                 }
                 if(CheckCollisionPointRec(mouse,credit_btn))
                 {
+                    PlaySound(click_sound);
                     state = CREDIT;
                 }
             }
@@ -512,6 +543,7 @@ int main(void)
             {
                 if(success && CheckCollisionPointRec(mouse, next_level_btn))
                 {
+                    PlaySound(click_sound);
                     level++;
                     applyLevelSpeeds(cars, car_idx, turtles, tur_idx, logs, log_idx, level);
                     frog_pos=(Vector2){7*i_cap, 13*j_cap};
@@ -529,6 +561,7 @@ int main(void)
                 }
                 else if(success && CheckCollisionPointRec(mouse, menu_btn))
                 {
+                    PlaySound(click_sound);
                     level=1;
                     applyLevelSpeeds(cars, car_idx, turtles, tur_idx, logs, log_idx, level);
                     frog_pos=(Vector2){7*i_cap, 13*j_cap};
@@ -543,10 +576,12 @@ int main(void)
                     for(int k=0; k<11; k++) visited[k]=false;
                     for(int k=0; k<NUM_HOMES; k++) filled[k]=false;
                     filled_count=0;
+                    ResumeMusicStream(openSong);
                     state=MENU;
                 }
                 else if(!success && CheckCollisionPointRec(mouse, restart_btn))
                 {
+                    PlaySound(click_sound);
                     level=1;
                     applyLevelSpeeds(cars, car_idx, turtles, tur_idx, logs, log_idx, level);
                     frog_pos=(Vector2){7*i_cap, 13*j_cap};
@@ -561,6 +596,7 @@ int main(void)
                     for(int k=0; k<11; k++) visited[k]=false;
                     for(int k=0; k<NUM_HOMES; k++) filled[k]=false;
                     filled_count=0;
+                    ResumeMusicStream(openSong);
                     state=MENU;
                 }
             }
@@ -682,6 +718,9 @@ int main(void)
             DrawRectangleRec(back_btn, LIGHTGRAY);
             DrawText("BACK", back_btn.x+60, back_btn.y+15, 30, BLACK);
         }
+        Texture2D current_icon = muted ? mute_icon : unmute_icon;
+        DrawTexturePro(current_icon,(Rectangle){0.0f, 0.0f, (float)current_icon.width, (float)current_icon.height},
+                        mute_btn, Vector2Zero(), 0.0f, WHITE);
         
         EndDrawing();
     }
@@ -703,7 +742,16 @@ int main(void)
     UnloadTexture(turtle_pic);
     UnloadSound(jump);
     UnloadTexture(upper_grass);
+    UnloadMusicStream(openSong);
+    UnloadSound(killed_sound);
+    UnloadSound(endgame_sound);
+    UnloadSound(startgame_sound);
+    UnloadSound(winner_sound);
+    UnloadSound(click_sound);
+    UnloadTexture(mute_icon);
+    UnloadTexture(unmute_icon);
 
+    CloseAudioDevice();
     CloseWindow();
     return 0;
 }
