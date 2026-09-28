@@ -1,0 +1,938 @@
+#include "raylib.h"
+#include "raymath.h"
+#include<stdbool.h>
+#include<stdio.h>
+#include<string.h>
+
+#define HEIGHT 1000
+#define WIDTH 1200
+#define NUM_HOMES 7
+#define MAX_HIGHSCORES 10
+#define MAX_NAME_LEN 16
+#define HIGHSCORE_FILE "highscores.txt"
+
+typedef struct car
+{
+    float speed;
+    float base_speed;
+    float position_x;
+    float position_y;
+    float width;
+    int pic_num;
+}car;
+
+typedef struct  turtle
+{
+    float speed;
+    float base_speed;
+    float position_x;
+    float position_y;
+    int pic_num;
+}turtle;
+
+typedef struct  logg
+{
+    float speed;
+    float base_speed;
+    float position_x;
+    float position_y;
+    float width;
+    int pic_num;
+}logg;
+
+typedef struct highscore
+{
+    char name[MAX_NAME_LEN];
+    int score;
+}HighScore;
+typedef enum {MENU, PLAYING, DYING, GAME_OVER, CREDIT, ENTER_NAME, LEADERBOARD, HELP}GameState;
+GameState state=MENU;
+float levelSpeedMultiplier(int level)
+{
+    return 1.0f + (level - 1) * 0.2f;
+}
+void applyLevelSpeeds(car cars[], int car_count, turtle turtles[], int tur_count, logg logs[], int log_count, int level)
+{
+    float mult = levelSpeedMultiplier(level);
+    for(int i=0; i<car_count; i++)
+        cars[i].speed = cars[i].base_speed * mult;
+    for(int i=0; i<tur_count; i++)
+        turtles[i].speed = turtles[i].base_speed * mult;
+    for(int i=0; i<log_count; i++)
+        logs[i].speed = logs[i].base_speed * mult;
+}
+
+void loadHighScores(HighScore arr[], int *count)
+{
+    *count = 0;
+    FILE *f = fopen(HIGHSCORE_FILE, "r");
+    if(!f) return;
+
+    char name[MAX_NAME_LEN];
+    int score;
+    while(*count < MAX_HIGHSCORES && fscanf(f, "%15[^,],%d\n", name, &score) == 2)
+    {
+        strncpy(arr[*count].name, name, MAX_NAME_LEN-1);
+        arr[*count].name[MAX_NAME_LEN-1] = '\0';
+        arr[*count].score = score;
+        (*count)++;
+    }
+    fclose(f);
+}
+
+void saveHighScores(HighScore arr[], int count)
+{
+    FILE *f = fopen(HIGHSCORE_FILE, "w");
+    if(!f) return;
+
+    for(int i=0; i<count; i++)
+        fprintf(f, "%s,%d\n", arr[i].name, arr[i].score);
+    fclose(f);
+}
+
+void addHighScore(HighScore arr[], int *count, const char *name, int score)
+{
+    int insert_pos = *count;
+    for(int i=0; i<*count; i++)
+    {
+        if(score > arr[i].score)
+        {
+            insert_pos = i;
+            break;
+        }
+    }
+    if(insert_pos < MAX_HIGHSCORES)
+    {
+        int last = (*count < MAX_HIGHSCORES) ? *count : MAX_HIGHSCORES-1;
+        for(int i=last; i>insert_pos; i--)
+        {
+            arr[i] = arr[i-1];
+        }
+        strncpy(arr[insert_pos].name, name, MAX_NAME_LEN-1);
+        arr[insert_pos].name[MAX_NAME_LEN-1] = '\0';
+        arr[insert_pos].score = score;
+        if(*count < MAX_HIGHSCORES) (*count)++;
+    }
+}
+
+int main(void)
+{   float i_cap=WIDTH/15.0f;
+    float j_cap=HEIGHT/15.0f;
+
+    float delay_time=0;
+
+    Vector2 river ={0.0f,j_cap*2};
+    Vector2 road={0.0f,j_cap*8};
+    Vector2 frog_pos={7*i_cap,13*j_cap};
+
+    Texture2D car_pic[5];
+    Texture2D ground;
+    Texture2D frog[2];
+    Texture2D turtle_pic;
+    Texture2D log_pic[3];
+    Texture2D upper_grass;
+    Texture2D death_pic[7];
+
+
+    InitWindow(WIDTH,HEIGHT,"FROGGER");
+    SetTargetFPS(60);
+    InitAudioDevice();
+
+    Sound jump= LoadSound("asset/music/proiettile.wav");
+    Music openSong        = LoadMusicStream("asset/music/openSong.wav"); 
+    Sound killed_sound    = LoadSound("asset/music/killed.wav"); 
+    Sound endgame_sound   = LoadSound("asset/music/endGame.wav"); 
+    Sound startgame_sound = LoadSound("asset/music/startingGame.wav");
+    Sound winner_sound    = LoadSound("asset/music/winner.wav"); 
+    Sound click_sound     = LoadSound("asset/music/sound.wav");
+    Texture2D mute_icon   = LoadTexture("asset/sound_off_icon.png");
+    Texture2D unmute_icon = LoadTexture("asset/sound_on_icon.png");
+    SetSoundVolume(jump, 4);
+    SetSoundVolume(killed_sound, 1.6);
+
+    car_pic[0] = LoadTexture("asset/car_1.png");
+    car_pic[1] = LoadTexture("asset/car_2.png");
+    car_pic[2] = LoadTexture("asset/car_3.png");
+    car_pic[3] = LoadTexture("asset/tractor.png");
+    car_pic[4] = LoadTexture("asset/truck.png");
+    ground = LoadTexture("asset/flower_ground_1.png");
+    frog[0]= LoadTexture("asset/frog0000.png");
+    frog[1]= LoadTexture("asset/frog0001.png");
+    turtle_pic= LoadTexture("asset/turtle0000.png");
+    log_pic[0]= LoadTexture("asset/log_left.png");
+    log_pic[1]= LoadTexture("asset/log_middle.png");
+    log_pic[2]= LoadTexture("asset/log_right.png");
+    upper_grass = LoadTexture("asset/flower_ground_2.png"); 
+
+    death_pic[0]= LoadTexture("asset/frog_death0000.png");
+    death_pic[1]= LoadTexture("asset/frog_death0001.png");
+    death_pic[2]= LoadTexture("asset/frog_death0002.png");
+    death_pic[3]= LoadTexture("asset/frog_death0003.png");
+    death_pic[4]= LoadTexture("asset/frog_death0004.png");
+    death_pic[5]= LoadTexture("asset/frog_death0005.png");
+    death_pic[6]= LoadTexture("asset/frog_death0006.png");
+    int death_frame = 0;
+    float death_timer=0.0;
+    float frame_time = .25;
+
+    car cars[14];
+    turtle turtles[20];
+    logg logs[34];
+
+    int car_idx=0;
+    int tur_idx=0;
+    int log_idx=0;
+
+    for(int i=0;i<2;i++)
+    {
+        cars[car_idx].pic_num=4;
+        cars[car_idx].speed=-100.0f;
+        cars[car_idx].base_speed=-100.0f;
+        cars[car_idx].position_x=(8+5*i)*i_cap;
+        cars[car_idx].position_y=8*j_cap;
+        cars[car_idx].width=2*i_cap;
+        car_idx++;
+        
+    }
+    for(int i=0;i<3;i++)
+    {
+        cars[car_idx].pic_num=2;
+        cars[car_idx].speed=+120.0f;
+        cars[car_idx].base_speed=+120.0f;
+        cars[car_idx].position_x=(1+5*i)*i_cap;
+        cars[car_idx].position_y=9*j_cap;   
+        cars[car_idx].width=i_cap;      
+        car_idx++;
+    }
+    for(int i=0;i<3;i++)
+    {
+        cars[car_idx].pic_num=1;
+        cars[car_idx].speed=-200.0f;
+        cars[car_idx].base_speed=-200.0f;
+        cars[car_idx].position_x=(4+4*i)*i_cap;
+        cars[car_idx].position_y=10*j_cap; 
+        cars[car_idx].width=i_cap;     
+        car_idx++;
+    }
+    for(int i=0;i<3;i++)
+    {
+        cars[car_idx].pic_num=3;
+        cars[car_idx].speed=+150.0f;   
+        cars[car_idx].base_speed=+150.0f;     
+        cars[car_idx].position_x=(6+4*i)*i_cap;
+        cars[car_idx].position_y=11*j_cap;
+        cars[car_idx].width=i_cap;  
+        car_idx++;       
+    }    
+    for(int i=0;i<3;i++)
+    {
+        cars[car_idx].pic_num=0;
+        cars[car_idx].speed=-130.0f;
+        cars[car_idx].base_speed=-130.0f;
+        cars[car_idx].position_x=(2+4*i)*i_cap;
+        cars[car_idx].position_y=12*j_cap;  
+        cars[car_idx].width=i_cap;        
+        car_idx++;
+    }
+    for(int j=0;j<2;j++)    
+    {
+        for(int i=0;i<4;i++)
+        {
+            turtles[tur_idx].speed=-120.0f;
+            turtles[tur_idx].base_speed=-120.0f;
+            turtles[tur_idx].position_x=3+(4*i+j)*i_cap;
+            turtles[tur_idx].position_y=3*j_cap;
+            tur_idx++;
+        }
+    }
+    for(int j=0;j<3;j++)    
+    {
+        for(int i=0;i<4;i++)
+        {
+            turtles[tur_idx].speed=-120.0f;
+            turtles[tur_idx].base_speed=-120.0f;
+            turtles[tur_idx].position_x=(6*i+j)*i_cap;
+            turtles[tur_idx].position_y=6*j_cap;
+            tur_idx++;
+        }
+    }
+    for(int i=0;i<3;i++)
+    {
+        for(int j=0;j<4;j++)
+        {
+            logs[log_idx].speed=100.0f;
+            logs[log_idx].base_speed=100.0f;
+            if(j==0)
+            logs[log_idx].pic_num=0;
+            else if(j==3)
+            logs[log_idx].pic_num=2;
+            else
+            logs[log_idx].pic_num=1;
+
+            logs[log_idx].position_x=(1+5*i+j)*i_cap;
+            logs[log_idx].position_y=2*j_cap;
+            log_idx++;
+        }
+    }
+    for(int i=0;i<2;i++)
+    {
+        for(int j=0;j<5;j++)
+        {
+            logs[log_idx].speed=120.0f;
+            logs[log_idx].base_speed=120.0f;
+            if(j==0)
+            {logs[log_idx].pic_num=0;}
+            else if(j==4)
+            {
+                logs[log_idx].pic_num=2;
+            }
+            else{
+                logs[log_idx].pic_num=1;
+            }
+            logs[log_idx].position_x=(10*i+j)*i_cap;
+            logs[log_idx].position_y=4*j_cap;
+            log_idx++;
+        }
+    }
+    for(int i=0;i<3;i++)
+    {
+        for(int j=0;j<4;j++)
+        {
+            logs[log_idx].speed=120.0f;
+            logs[log_idx].base_speed=120.0f;
+            if(j==0)
+            {logs[log_idx].pic_num=0;}
+            else if(j==3)
+            {
+                logs[log_idx].pic_num=2;
+            }
+            else{
+                logs[log_idx].pic_num=1;
+            }
+            logs[log_idx].position_x=(6*i+j)*i_cap;
+            logs[log_idx].position_y=5*j_cap;
+            log_idx++;
+        }
+    }
+
+    float frog_rot=0.0f;
+    float time=0.0f;
+    float max_time=30.0f;
+    float pos_x=0.0f;
+
+    Rectangle start_btn = {WIDTH/2-100, HEIGHT/2-30, 200, 60};
+    Rectangle credit_btn = {WIDTH/2-100, HEIGHT/2+50, 200, 60};
+    Rectangle leaderboard_btn = {WIDTH/2-100, HEIGHT/2+130, 200, 60}; 
+    Rectangle help_btn = {WIDTH/2-100, HEIGHT/2+210, 200, 60};
+    Rectangle back_btn = {WIDTH-300, HEIGHT-200, 200, 60};
+    Rectangle restart_btn = {WIDTH/2-100, HEIGHT/2+150, 200, 60};
+    Rectangle next_level_btn = {WIDTH/2-100, HEIGHT/2+150, 200, 60};
+    Rectangle menu_btn= {WIDTH/2-100, HEIGHT/2+230, 200, 60};
+    Rectangle submit_btn = {WIDTH/2-100, HEIGHT/2+100, 200, 60};
+    Rectangle mute_btn = {WIDTH - 70.0f, 20.0f, 50.0f, 50.0f};
+    bool muted = false;
+
+    int live=3;
+    int score=0;
+    bool visited[11]={false};
+    int y_level=-1;
+
+    bool filled[NUM_HOMES]={false};
+    int filled_count=0;
+    int level=1;
+
+    HighScore highscores[MAX_HIGHSCORES];
+    int highscore_count=0;
+    loadHighScores(highscores, &highscore_count);
+
+    char name_buffer[MAX_NAME_LEN] = "";
+    int name_len = 0;
+    
+    PlayMusicStream(openSong);
+
+    while(!WindowShouldClose())
+    {
+        float dt=GetFrameTime();
+        UpdateMusicStream(openSong);
+        Vector2 mouse_pos = GetMousePosition();
+        if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mouse_pos, mute_btn))
+        {
+            muted = !muted;
+            SetMasterVolume(muted ? 0.0f : 1.0f);
+            PlaySound(click_sound);
+        }
+
+        if(state==CREDIT)
+        {
+            Vector2 mouse = GetMousePosition();
+            if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mouse, back_btn))
+            {
+                PlaySound(click_sound);
+                state = MENU;
+            }
+        }
+        if(state==LEADERBOARD)
+        {
+            Vector2 mouse = GetMousePosition();
+            if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mouse, back_btn))
+            {
+                PlaySound(click_sound);
+                state = MENU;
+            }
+        }
+        if(state==HELP)
+        {
+            Vector2 mouse = GetMousePosition();
+            if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mouse, back_btn))
+            {
+                PlaySound(click_sound);
+                state = MENU;
+            }
+        }
+        if(state==ENTER_NAME)
+        {
+            int key = GetCharPressed();
+            while(key > 0)
+            {
+                if(key>=32 && key<=125 && key!=',' && name_len < MAX_NAME_LEN-1)
+                {
+                    name_buffer[name_len] = (char)key;
+                    name_len++;
+                    name_buffer[name_len] = '\0';
+                }
+                key = GetCharPressed();
+            }
+            if(IsKeyPressed(KEY_BACKSPACE) && name_len>0)
+            {
+                name_len--;
+                name_buffer[name_len]='\0';
+            }
+
+            Vector2 mouse = GetMousePosition();
+            bool submit_clicked = IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mouse, submit_btn);
+            if(IsKeyPressed(KEY_ENTER) || submit_clicked)
+            {
+                PlaySound(click_sound);
+                const char *final_name = (name_len>0) ? name_buffer : "PLAYER";
+                addHighScore(highscores, &highscore_count, final_name, score);
+                saveHighScores(highscores, highscore_count);
+                state = GAME_OVER;
+            }
+        }
+        if(state == PLAYING)
+        {
+            time+=dt;
+            if(time<max_time)
+            {
+                for (int i= 0; i < car_idx; i++) 
+                {
+                    cars[i].position_x+=cars[i].speed*dt;
+                    if (cars[i].speed > 0 && cars[i].position_x > WIDTH)
+                    cars[i].position_x=-cars[i].width;
+
+                    else if (cars[i].speed < 0 && cars[i].position_x+cars[i].width < 0)
+                    cars[i].position_x = WIDTH+cars[i].width;
+                }
+
+                for (int i= 0; i < tur_idx; i++) 
+                {
+                    turtles[i].position_x+=turtles[i].speed*dt;
+
+                    if (turtles[i].position_x+i_cap<0) 
+                    {
+                        turtles[i].position_x = WIDTH+i_cap;   
+                    }
+                }     
+                for (int i= 0; i < log_idx; i++) 
+                {
+                    logs[i].position_x+=logs[i].speed*dt;
+
+                    if(logs[i].position_x>WIDTH) 
+                    {
+                        logs[i].position_x -= (WIDTH+i_cap);   
+                    }
+                }                 
+                if (IsKeyPressed(KEY_UP)) 
+                {
+                    frog_pos.y -= j_cap;
+                    frog_rot = 0.0f;
+                    y_level++;
+                    PlaySound(jump);
+                    
+                    if( !visited[y_level] && y_level<11 && y_level>=0)
+                    {
+                        visited[y_level]=true;
+                        score+=10*level;
+                    }
+                }
+                if (IsKeyPressed(KEY_DOWN)) 
+                {
+                    frog_pos.y += j_cap;
+                    frog_rot = 180.0f;
+                    y_level--;
+                    PlaySound(jump);
+                }
+                if (IsKeyPressed(KEY_LEFT)) 
+                {
+                    frog_pos.x -= i_cap;
+                    frog_rot = 270.0f;
+                    PlaySound(jump);
+                }
+                if (IsKeyPressed(KEY_RIGHT)) 
+                {
+                    frog_pos.x += j_cap;
+                    frog_rot = 90.0f;
+                    PlaySound(jump);
+                }
+                if(frog_pos.y<20)
+                frog_pos.y=1*j_cap;
+                else if(frog_pos.y>13*j_cap)
+                {
+                    frog_pos.y=13*j_cap;
+                }
+                else if(frog_pos.x<0)
+                {
+                    frog_pos.x=0;
+                }
+                else if(frog_pos.x>WIDTH)
+                {
+                    frog_pos.x=WIDTH;
+                }
+            }
+            else
+            {
+
+                if(state==PLAYING)
+                {
+                    state=DYING;
+                    death_timer=0;
+                    death_frame=0;
+                    PlaySound(killed_sound);
+                }
+            }
+            for(int i=0; i<car_idx; i++)
+            {
+                if(CheckCollisionRecs((Rectangle){frog_pos.x,frog_pos.y,i_cap*0.5,j_cap*0.6}, (Rectangle){cars[i].position_x,cars[i].position_y,cars[i].width*.7,j_cap*.7}))
+                {
+                    if (state==PLAYING) 
+                    {
+                        state=DYING;
+                        death_timer=0;
+                        death_frame=0;
+                        PlaySound(killed_sound);
+                    }
+                }
+            }
+
+            bool inriver=(frog_pos.y > river.y-j_cap && frog_pos.y < river.y+j_cap*4);
+            bool onplatform=false;
+            if(inriver)
+            {
+                for(int i=0; i<tur_idx; i++)
+                {
+                    if((((CheckCollisionRecs((Rectangle){frog_pos.x,frog_pos.y,i_cap*.7,j_cap*.7}, (Rectangle){turtles[i].position_x,turtles[i].position_y,i_cap*.7,j_cap*.7})))))
+                    {
+                        onplatform = true;
+                        frog_pos.x += turtles[i].speed * dt;
+                        break;
+                    }
+                }
+                for(int i=0; i<log_idx; i++)
+                {
+                    if((((CheckCollisionRecs((Rectangle){frog_pos.x,frog_pos.y,i_cap*.7,j_cap*.7}, (Rectangle){logs[i].position_x,logs[i].position_y,i_cap*.7,j_cap*.7})))))
+                    {
+                        onplatform = true;
+                        frog_pos.x += logs[i].speed * dt;
+                        break;
+                    }
+                }
+
+                if(frog_pos.x<0 || frog_pos.x>(WIDTH-i_cap))
+                {
+                    if (state==PLAYING) 
+                    {
+                        state=DYING;
+                        death_timer=0;
+                        death_frame=0;
+                        PlaySound(killed_sound);
+                    } 
+                }
+
+                if(!onplatform)
+                {
+                    if (state==PLAYING) 
+                    {
+                        state=DYING;
+                        death_timer=0;
+                        death_frame=0;
+                        PlaySound(killed_sound);
+                    }
+                }
+            }
+            for(int i=1; i<=14; i+=2)
+            {
+                int slot = (i-1)/2;
+                if( !filled[slot] && CheckCollisionRecs((Rectangle){frog_pos.x,frog_pos.y,i_cap*.7,j_cap*.7},
+                                    (Rectangle){i*i_cap, j_cap, .3*i_cap, .1*j_cap}))
+                {
+                    filled[slot]=true;
+                    filled_count++;
+                    score+=50+(level-1)*20;
+                    time=0.0f;
+                    if(filled_count>=NUM_HOMES)
+                    {
+                        state=GAME_OVER;
+                        PlaySound(winner_sound);
+                    }
+                    //delay_time+=dt;
+                    //if(delay_time>=.2)
+                    else
+                    {
+                        frog_pos.x =7*i_cap;
+                        frog_pos.y =13*j_cap;
+                        frog_rot = 0.0;
+                        y_level=-1;
+                        for(int k=0; k<11; k++) visited[k]=false;
+                    } 
+                }
+            }
+        }
+
+        if(state==DYING)
+        {
+            death_timer+=dt;
+            death_frame=(int)(death_timer/frame_time);
+            if(death_frame>=6)
+            {
+                live--;
+                if (live<=0) 
+                {
+                    state = ENTER_NAME;
+                    name_len = 0;
+                    name_buffer[0] = '\0';
+                    PlaySound(endgame_sound);
+                }
+                else 
+                {
+                    frog_pos.x =8*i_cap;
+                    frog_pos.y=13*j_cap;
+                    time=0.0f;
+                    state=PLAYING;
+                }
+            } 
+        }
+        if(state==MENU)
+        {
+            Vector2 mouse = GetMousePosition();
+            if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
+                if(CheckCollisionPointRec(mouse, start_btn))
+                {
+                    PlaySound(click_sound);
+                    PlaySound(startgame_sound);
+                    PauseMusicStream(openSong);
+                    frog_pos=(Vector2){7*i_cap, 13*j_cap};
+                    time =0;
+                    score=0;
+                    frog_rot=0;
+                    live=3;
+                    y_level=-1;
+                    delay_time=0;
+                    death_timer=0;
+                    death_frame=0;
+                    level=1;
+                    applyLevelSpeeds(cars, car_idx, turtles, tur_idx, logs, log_idx, level);
+                    for(int k=0; k<11; k++)
+                    visited[k]=false;
+                    for(int k=0; k<NUM_HOMES; k++)
+                    filled[k]=false;
+                    filled_count=0;
+                    state=PLAYING;
+                }
+                if(CheckCollisionPointRec(mouse,credit_btn))
+                {
+                    PlaySound(click_sound);
+                    state = CREDIT;
+                }
+                if(CheckCollisionPointRec(mouse,leaderboard_btn))
+                {
+                    PlaySound(click_sound);
+                    state = LEADERBOARD;
+                }
+                if(CheckCollisionPointRec(mouse,help_btn))
+                {
+                    state=HELP;
+                }
+            }
+        }
+        if(state==GAME_OVER)
+        {
+            bool success = (live>0);
+            for(int k=0; k<NUM_HOMES; k++) 
+            filled[k]=false;
+            filled_count=0;
+            Vector2 mouse=GetMousePosition();
+            if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            // && CheckCollisionPointRec(mouse, restart_btn))
+            {
+                if(success && CheckCollisionPointRec(mouse, next_level_btn))
+                {
+                    PlaySound(click_sound);
+                    level++;
+                    applyLevelSpeeds(cars, car_idx, turtles, tur_idx, logs, log_idx, level);
+                    frog_pos=(Vector2){7*i_cap, 13*j_cap};
+                    time=0;
+                    frog_rot=0;
+                    y_level=-1;
+                    delay_time=0;
+                    death_timer=0;
+                    death_frame=0;
+                    for(int k=0; k<11; k++) visited[k]=false;
+                    //for(int k=0; k<NUM_HOMES; k++) filled[k]=false;
+                    filled_count=0;
+                    state=PLAYING;
+
+                }
+                else if(success && CheckCollisionPointRec(mouse, menu_btn))
+                {
+                    PlaySound(click_sound);
+                    level=1;
+                    applyLevelSpeeds(cars, car_idx, turtles, tur_idx, logs, log_idx, level);
+                    frog_pos=(Vector2){7*i_cap, 13*j_cap};
+                    time=0;
+                    score=0;
+                    frog_rot=0;
+                    live=3;
+                    y_level=-1;
+                    delay_time=0;
+                    death_timer=0;
+                    death_frame=0;
+                    for(int k=0; k<11; k++) visited[k]=false;
+                    //for(int k=0; k<NUM_HOMES; k++) filled[k]=false;
+                    filled_count=0;
+                    ResumeMusicStream(openSong);
+                    state=MENU;
+                }
+                else if(!success && CheckCollisionPointRec(mouse, restart_btn))
+                {
+                    PlaySound(click_sound);
+                    level=1;
+                    applyLevelSpeeds(cars, car_idx, turtles, tur_idx, logs, log_idx, level);
+                    frog_pos=(Vector2){7*i_cap, 13*j_cap};
+                    time =0;
+                    score=0;
+                    frog_rot=0;
+                    live=3;
+                    y_level=-1;
+                    delay_time=0;
+                    death_timer=0;
+                    death_frame=0;
+                    for(int k=0; k<11; k++) visited[k]=false;
+                    //for(int k=0; k<NUM_HOMES; k++) filled[k]=false;
+                    filled_count=0;
+                    ResumeMusicStream(openSong);
+                    state=MENU;
+                }
+            }
+        }
+        if(state==ENTER_NAME)
+        {
+            for(int i=0; i<NUM_HOMES; i++)
+            filled[i]=false;
+        }
+
+        BeginDrawing();
+        ClearBackground((Color){0,0,0,255});
+        if(state==PLAYING || state==DYING)
+        {
+            DrawRectangle(river.x, river.y,WIDTH,j_cap*5,(Color){0, 43, 77,255});
+            DrawRectangle(road.x, road.y, WIDTH, j_cap*5, (Color){0,0,0,255});
+
+            DrawRectangle(0, 0, WIDTH, 2*j_cap, (Color){60, 100, 60, 255});
+            for(int i=1; i<=16; i+=2)
+            {
+                DrawRectangle(i*i_cap, j_cap, i_cap, j_cap, BLACK);
+                DrawTexturePro(upper_grass, (Rectangle){0.0f, 0.0f,  upper_grass.width, upper_grass.height}, (Rectangle){(i-1)*i_cap, j_cap, i_cap, j_cap}, Vector2Zero(), 0.0f, WHITE);
+            }
+
+            for(int i=0;i<car_idx;i++)
+            {
+                DrawTexturePro(car_pic[cars[i].pic_num],(Rectangle){0.0f,0.0f,car_pic[cars[i].pic_num].width,car_pic[cars[i].pic_num].height},(Rectangle){cars[i].position_x,cars[i].position_y,cars[i].width,j_cap},Vector2Zero(),0.0f,WHITE);
+            }
+            for(int i=0;i<log_idx;i++)
+            {
+                DrawTexturePro(log_pic[logs[i].pic_num],(Rectangle){0.0f,0.0f,log_pic[logs[i].pic_num].width,log_pic[logs[i].pic_num].height},(Rectangle){logs[i].position_x,logs[i].position_y,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
+            }
+            for(int i=0;i<tur_idx;i++)
+            {
+            DrawTexturePro(turtle_pic,(Rectangle){0.0f,0.0f,turtle_pic.width,turtle_pic.height},(Rectangle){turtles[i].position_x,turtles[i].position_y,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
+            }
+            pos_x=0.0f;
+            for(int i=0;i<15;i++)
+            {
+                DrawTexturePro(ground,(Rectangle){0.0f,0.0f,ground.width,ground.height},(Rectangle){pos_x,7*j_cap,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
+                pos_x+=i_cap;
+            }
+            pos_x=0.0f;
+            for(int i=0;i<15;i++)
+            {
+                DrawTexturePro(ground,(Rectangle){0.0f,0.0f,ground.width,ground.height},(Rectangle){pos_x,13*j_cap,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
+                pos_x+=i_cap;
+            }
+            pos_x=0.0f;
+            for(int i=0;i<15;i++)
+            {
+                DrawTexturePro(upper_grass,(Rectangle){0.0f,0.0f,upper_grass.width,upper_grass.height},(Rectangle){pos_x,0.0f,i_cap,j_cap},Vector2Zero(),0.0f,WHITE);
+                pos_x+=i_cap;
+            }
+        }
+
+
+        for(int i=1; i<=13; i+=2)
+        {
+            int slot = (i-1)/2;
+            
+            if(filled[slot])
+            {
+                DrawTexturePro(frog[0],
+                    (Rectangle){0.0f, 0.0f, frog[0].width, frog[0].height},
+                    (Rectangle){i*i_cap + i_cap/2.0f, j_cap + j_cap/2.0f, i_cap*0.8f, j_cap*0.8f},
+                    (Vector2){i_cap*0.35f, j_cap*0.35f}, 0.0f, WHITE);
+            }
+        }
+
+
+        if(state == PLAYING)
+        DrawTexturePro(frog[0],(Rectangle){0.0f,0.0f,frog[0].width,frog[0].height},(Rectangle){frog_pos.x+i_cap/2.0f,frog_pos.y+j_cap/2.0f,i_cap,j_cap},(Vector2){i_cap/2.0f,j_cap/2.0f},frog_rot,WHITE);
+
+        if(state==DYING)
+        {
+            int frame=death_frame<7?death_frame:6;
+            DrawTexturePro(death_pic[frame], (Rectangle){0.0f, 0.0f,death_pic[frame].width, death_pic[frame].height},
+                            (Rectangle){frog_pos.x+i_cap/2.0f,frog_pos.y+j_cap/2.0f,i_cap,j_cap},(Vector2){i_cap/2.0f,j_cap/2.0f},frog_rot,YELLOW);
+        }
+
+        if(state==GAME_OVER && live<=0)
+        {
+            DrawRectangle(0, 4*j_cap, WIDTH, 5*j_cap, BLACK);
+            DrawText(TextFormat("GAME OVER"), 2*i_cap, 5*j_cap, 2*j_cap, YELLOW);
+            DrawText(TextFormat("SCORE: %d   LEVEL: %d", score, level), 2*i_cap, 8*j_cap, j_cap, YELLOW);
+            DrawRectangleRec(restart_btn, LIGHTGRAY);
+            DrawText("RESTART", restart_btn.x+20, restart_btn.y+15, 30, BLACK);
+        }
+
+        if(state== GAME_OVER && live>0)
+        {
+            DrawRectangle(0, 4*j_cap, WIDTH, 5*j_cap, BLACK);
+            DrawText(TextFormat("LEVEL %d COMPLETE!", level), 2*i_cap, 5*j_cap, (int)(1.3f*j_cap), YELLOW);
+            DrawText(TextFormat("SCORE: %d", score), 2*i_cap, 8*j_cap, j_cap, YELLOW);
+            DrawRectangleRec(next_level_btn, LIGHTGRAY);
+            DrawText("NEXT LEVEL", next_level_btn.x+15, next_level_btn.y+15, 26, BLACK);
+
+            DrawRectangleRec(menu_btn, LIGHTGRAY);
+            DrawText("BACK TO MENU", menu_btn.x+8, menu_btn.y+15, 26, BLACK);
+        }
+        if(state==PLAYING)
+        {
+            DrawText(TextFormat("SCORE: %d", score), 13*i_cap, 14*j_cap, 25, LIGHTGRAY);
+            DrawText(TextFormat("TIME %.2f",max_time- time), 10*i_cap, 14*j_cap, 25, LIGHTGRAY);
+            DrawText(TextFormat("LIVE: %d",live), 6*i_cap, 14*j_cap, 25, LIGHTGRAY);
+            DrawText(TextFormat("LEVEL: %d", level), 1*i_cap, 14*j_cap, 25, LIGHTGRAY);
+        }
+
+        if(state==MENU)
+        {
+            ClearBackground(BLACK);
+            DrawText("FROGGER", WIDTH/2-MeasureText("FROGGER",80)/2, HEIGHT/4, 80, YELLOW);
+            DrawRectangleRec(start_btn, LIGHTGRAY);
+            DrawText("START", start_btn.x+40, start_btn.y+15, 30, BLACK);
+
+            DrawRectangleRec(credit_btn, LIGHTGRAY);
+            DrawText("CREDITS", credit_btn.x+20, credit_btn.y+15, 30, BLACK);
+
+            DrawRectangleRec(leaderboard_btn, LIGHTGRAY);
+            DrawText("LEADERBOARD", leaderboard_btn.x+8, leaderboard_btn.y+15, 22, BLACK);
+
+            DrawRectangleRec(help_btn, LIGHTGRAY);
+            DrawText("HOW TO PLAY", help_btn.x+8, help_btn.y+15, 25, BLACK);
+        }
+        if(state==CREDIT)
+        {
+            DrawText("CREDITS", WIDTH/2 - MeasureText("CREDITS",60)/2, HEIGHT/4, 60, YELLOW);
+            DrawText("EMON ISLAM - 2505020", WIDTH/2-120, HEIGHT/2-40, 30, WHITE);
+            DrawText("IBTASAM HAIDER RIDDHO - 2505009", WIDTH/2-190, HEIGHT/2, 30, WHITE);
+            DrawRectangleRec(back_btn, LIGHTGRAY);
+            DrawText("BACK", back_btn.x+60, back_btn.y+15, 30, BLACK);
+        }
+        if(state==LEADERBOARD)
+        {
+            DrawText("LEADERBOARD", WIDTH/2 - MeasureText("LEADERBOARD",60)/2, HEIGHT/8, 60, YELLOW);
+            if(highscore_count==0)
+            {
+                DrawText("NO SCORES YET", WIDTH/2 - MeasureText("NO SCORES YET",30)/2, HEIGHT/3, 30, WHITE);
+            }
+            else
+            {
+                for(int i=0; i<highscore_count; i++)
+                {
+                    DrawText(TextFormat("%2d. %-15s %6d", i+1, highscores[i].name, highscores[i].score),
+                             WIDTH/2-230, HEIGHT/4 + i*45, 28, WHITE);
+                }
+            }
+            DrawRectangleRec(back_btn, LIGHTGRAY);
+            DrawText("BACK", back_btn.x+60, back_btn.y+15, 30, BLACK);
+        }
+        if(state==HELP)
+        {
+            DrawText("1. Avoid the cars and cross the road \n2. Cross the river, but don't fall into it\n3. Get the frog into the holes before time runs out.\n4. Use arrow keys to move.", 200, 200, 25, WHITE );
+            DrawRectangleRec(back_btn, LIGHTGRAY);
+            DrawText("BACK", back_btn.x+60, back_btn.y+15, 30, BLACK);
+        }
+        if(state==ENTER_NAME)
+        {
+            DrawText("GAME OVER!", WIDTH/2 - MeasureText("GAME OVER!",60)/2, HEIGHT/2-180, 60, YELLOW);
+            const char *score_text = TextFormat("YOUR SCORE: %d", score);
+            DrawText(score_text, WIDTH/2 - MeasureText(score_text,30)/2, HEIGHT/2-100, 30, WHITE);
+            DrawText("ENTER YOUR NAME:", WIDTH/2-150, HEIGHT/2-45, 25, WHITE);
+            DrawRectangle(WIDTH/2-150, HEIGHT/2-10, 300, 50, DARKGRAY);
+            DrawText(name_buffer, WIDTH/2-140, HEIGHT/2+2, 28, WHITE);
+            DrawRectangleRec(submit_btn, LIGHTGRAY);
+            DrawText("SUBMIT", submit_btn.x+55, submit_btn.y+15, 30, BLACK);
+        }
+        Texture2D current_icon = muted ? mute_icon : unmute_icon;
+        DrawTexturePro(current_icon,(Rectangle){0.0f, 0.0f, (float)current_icon.width, (float)current_icon.height},
+                        mute_btn, Vector2Zero(), 0.0f, WHITE);
+        
+        EndDrawing();
+    }
+
+    for(int i=0;i<5;i++)
+    {
+        UnloadTexture(car_pic[i]);
+    }
+    for(int i=0;i<3;i++)
+    {
+        UnloadTexture(log_pic[i]);
+    }
+    for(int i=0;i<6;i++)
+    {
+        UnloadTexture(death_pic[i]);
+    }
+    UnloadTexture(frog[0]);
+    UnloadTexture(frog[1]);
+    UnloadTexture(turtle_pic);
+    UnloadSound(jump);
+    UnloadTexture(upper_grass);
+    UnloadMusicStream(openSong);
+    UnloadSound(killed_sound);
+    UnloadSound(endgame_sound);
+    UnloadSound(startgame_sound);
+    UnloadSound(winner_sound);
+    UnloadSound(click_sound);
+    UnloadTexture(mute_icon);
+    UnloadTexture(unmute_icon);
+
+    CloseAudioDevice();
+    CloseWindow();
+    return 0;
+}
